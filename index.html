@@ -710,7 +710,8 @@ SITE.forEach((a, i) => {
 });
 // main entrance from S8 and the north-east access road
 const road = (x1, x2, z1, z2) => flat(x1, x2, z1, z2, asphalt, 0.1);
-road(-205, -191, 196, 226); road(-300, -100, 219, 226);                   // entry and exit from S8 beyond the hotel, with slip lanes
+road(-205, -191, 196, 226); road(-300, -100, 219, 226);                   // second entry and exit from S8, beyond the hotel, with slip lanes
+road(-9, 9, 190, 226); road(-80, 80, 219, 226);                           // main entry and exit in the middle of the frontage
 road(-6, 6, 124, 190);                                                    // internal road between the two halves of car park 24
 flat(-10, -6, 124, 166, pavePink, 0.16); flat(6, 10, 124, 166, pavePink, 0.16);
 const NE_ROAD = [];
@@ -724,7 +725,7 @@ function arrow(x, z, rot) {
   const m = new THREE.Mesh(new THREE.ShapeGeometry(s), white);
   m.rotation.x = -Math.PI / 2; m.rotation.z = rot; m.position.set(x, 0.17, z); scene.add(m);
 }
-arrow(-201.5, 212, 0); arrow(-194.5, 205, Math.PI);
+arrow(-201.5, 212, 0); arrow(-194.5, 205, Math.PI); arrow(-4.5, 212, 0); arrow(4.5, 205, Math.PI);
 for (let x = -8.4; x < 8.5; x += 1.1) flat(x, x + .55, 166, 170.5, white, 0.17);   // zebra crossing
 
 // ---------- S8 ----------
@@ -784,9 +785,9 @@ function lot(x1, x2, z1, z2, gaps = []) {
     for (let z = z1 + 2; z < z2; z += 5) { bollards.push([g1 + .4, z, .16]); bollards.push([g2 - .4, z, .16]); }
   }
 }
-lot(-232, 212, -70, -32, [[-5, 5], [-126, -116], [58, 68]]);   // 6 — north parking
-lot(-200, -10, 126, 165, [[-112, -102]]);                      // 24 — south parking, west of the entrance
-lot(10, 286, 126, 165, [[118, 128]]);                          // 24 — east of the entrance, up to the east edge
+lot(-232, 212, -70, -32);   // 6 — north parking
+lot(-200, -10, 126, 165);                      // 24 — south parking, west of the entrance
+lot(10, 286, 126, 165);                          // 24 — east of the entrance, up to the east edge
 
 // ---------- buildings ----------
 // 4 Gym & Padel
@@ -1159,7 +1160,7 @@ SITE.forEach((a, i) => {
   const nx = -(b[1] - a[1]) / len * s, nz = (b[0] - a[0]) / len * s;
   for (let d = 4; d < len - 4; d += 8) {
     const x = a[0] + (b[0] - a[0]) * d / len - nx * 7, z = a[1] + (b[1] - a[1]) * d / len - nz * 7;
-    if (z > 205 || (x > -214 && x < -184) || lineDist(x, z, NE_ROAD, false) < 9) continue;
+    if (z > 205 || (x > -214 && x < -184) || Math.abs(x) < 14 || lineDist(x, z, NE_ROAD, false) < 9) continue;
     tree(x, z, rr(1, 1.4));
   }
 });
@@ -1323,6 +1324,7 @@ roadLabel('S8 · droga ekspresowa', -200, 4, 239);
 roadLabel('← Warszawa', -650, 4, 232);
 roadLabel('Rzeszów →', 650, 4, 246);
 roadLabel('Wjazd i wyjazd', -198, 4, 214);
+roadLabel('Wjazd i wyjazd', 0, 4, 214);
 roadLabel('Droga dojazdowa', 352, 4, -250);
 
 // ---------- UI ----------
@@ -1344,7 +1346,7 @@ function listItem(d, withBar) {
 }
 GLA.forEach(d => $('#glaList').appendChild(listItem(d, true)));
 OTHER.forEach(d => $('#otherList').appendChild(listItem(d, false)));
-{ const li = document.createElement('li'); li.innerHTML = `<div class="item" style="cursor:default;--c:#8fb26a"><span class="no">6·24</span><span class="nm">Parkingi<small>Drogi i parkingi (na szkicu: kolor zielony)</small></span><span class="ar">1&nbsp;800 miejsc</span></div>`; $('#otherList').appendChild(li); }
+{ const li = document.createElement('li'); li.innerHTML = `<div class="item" style="cursor:default;--c:#8fb26a"><span class="no">6·24</span><span class="nm">Parkingi<small>Drogi i parkingi (na szkicu: kolor zielony)</small></span><span class="ar">${fmt(Math.round(stalls / 10) * 10)}&nbsp;miejsc</span></div>`; $('#otherList').appendChild(li); }
 
 const side = $('#side'), sideToggle = $('#sideToggle');
 const setSide = open => { side.dataset.open = open; sideToggle.setAttribute('aria-expanded', open); };
@@ -1548,7 +1550,7 @@ const parkCars = [];
   const lanes = [makePath([...outer, outer[0]], true), makePath([...inner, inner[0]], true)];
   lanes.forEach(p => { for (let i = 0; i < 14; i++) parkCars.push({ p, s: p.total * i / 14 + rr(0, 20), v: rr(7, 10) }); });
   const arrive = makePath([[400, 229.3], [-185, 229.3], [-201.5, 222], [-201.5, 197.4], [-3, 197.4], [-3, 139.5], [-80, 139.5]]);
-  const leave = makePath([[-70, 139.5], [3, 139.5], [3, 192.6], [-194.5, 192.6], [-194.5, 222], [-180, 243.2], [450, 243.2]]);
+  const leave = makePath([[-70, 139.5], [3, 139.5], [3, 222], [16, 243.2], [450, 243.2]]);
   [arrive, leave].forEach(p => { for (let i = 0; i < 4; i++) parkCars.push({ p, s: -i * 22, v: rr(8, 11) }); });
 }
 const fleet = (() => {
@@ -1567,7 +1569,7 @@ const walkers = [];
   [-27, -29, 118.5, 121].forEach(z => lines.push(makePath([[-196, z], [254, z]])));
   [11, 20.5, 43, 53].forEach(z => lines.push(makePath([[-102, z], [-26, z]])));
   [19, 28, 45, 54].forEach(z => lines.push(makePath([[28, z], [142, z]])));
-  [[0, -70, -32], [-121, -70, -32], [63, -70, -32], [-107, 126, 165], [123, 126, 165], [-8, 124, 166], [8, 124, 166]].forEach(([x, a, b]) => lines.push(makePath([[x, a], [x, b]])));
+  [[-8, 124, 166], [8, 124, 166]].forEach(([x, a, b]) => lines.push(makePath([[x, a], [x, b]])));
   for (let i = 0; i < 180; i++) { const p = pickOf(lines); walkers.push({ p, s: rr(0, p.total), dir: rnd() < .5 ? 1 : -1, v: rr(1.05, 1.5), off: rr(-1.2, 1.2), ph: rr(0, 6) }); }
 }
 const walkMesh = (() => {
@@ -1608,7 +1610,7 @@ parkMotion(0, 0);
 // ---------- camera tour ----------
 const TOUR = [
   [new V3(-60, 260, 520), new V3(5, 0, 20), 'Outlet Park Rzeszów', 'Park handlowo-usługowy przy drodze ekspresowej S8'],
-  [new V3(-40, 30, 300), new V3(-198, 4, 205), 'Wjazd i wyjazd z S8', 'Bezpośredni dojazd do parku, tuż za hotelem'],
+  [new V3(-60, 34, 310), new V3(-100, 4, 205), 'Dwa wjazdy z S8', 'Na środku frontu i za hotelem'],
   [new V3(-60, 26, 248), new V3(-60, 6, 176), 'Pas usługowy przy drodze', 'Hotel, McDonald’s, stacja paliw, KFC i myjnia'],
   [new V3(-112, 36, 228), new V3(-160, 15, 177), 'Hotel', '8 kondygnacji, taras na dachu'],
   [new V3(0, 3.2, 114), new V3(0, 4, 41), 'Deptak do rynku', 'Główna oś piesza przez środek parku'],
@@ -1616,7 +1618,7 @@ const TOUR = [
   [new V3(98, 6, 50), new V3(40, 5, 47), 'Pierzeje sklepów', 'Dwupoziomowe sklepy i pasaże z restauracjami'],
   [new V3(150, 62, 160), new V3(213, 5, 62), 'Dom i Ogród, Lidl', 'Duzi najemcy we wschodniej części'],
   [new V3(-20, 72, -18), new V3(-60, 5, -110), 'Fly Park, Gym & Padel', 'Rozrywka, sport i plac zabaw w północnym pasie'],
-  [VIEWS.home[0], VIEWS.home[1], 'Outlet Park Rzeszów', `${fmt(TOTAL)} m² GLA · 1 800 miejsc parkingowych`],
+  [VIEWS.home[0], VIEWS.home[1], 'Outlet Park Rzeszów', `${fmt(TOTAL)} m² GLA · ${fmt(Math.round(stalls / 10) * 10)} miejsc parkingowych`],
 ];
 let tour = null;
 function startTour() {
