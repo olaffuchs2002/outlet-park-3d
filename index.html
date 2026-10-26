@@ -347,7 +347,7 @@ try { await Promise.race([document.fonts.load('700 64px "Barlow Condensed"'), ne
 let renderer;
 try { renderer = new THREE.WebGLRenderer({ antialias: true }); }
 catch (e) { app.innerHTML = '<div class="err">Ta przeglądarka nie obsługuje WebGL, więc model 3D nie może się wyświetlić.</div>'; throw e; }
-const PR = Math.min(devicePixelRatio, 1.5);
+const PR = Math.min(devicePixelRatio, 1.25);
 renderer.setPixelRatio(PR);
 renderer.setSize(app.clientWidth, app.clientHeight);
 renderer.shadowMap.enabled = true;
@@ -387,7 +387,7 @@ const hemi = new THREE.HemisphereLight('#eaf3ff', '#5d6b44', .3);
 const sun = new THREE.DirectionalLight('#fff0d6', 3.2);
 sun.position.set(-320, 480, 330);
 sun.castShadow = true;
-sun.shadow.mapSize.set(4096, 4096);
+sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -430, right: 430, top: 330, bottom: -330, near: 50, far: 1400 });
 sun.shadow.bias = -0.0005;
 sun.shadow.normalBias = 0.3;
@@ -406,13 +406,13 @@ const nightEnv = pmrem.fromScene(nightScene).texture;
 scene.background = dayEnv; scene.environment = dayEnv;
 
 // post-processing: ambient occlusion in corners and under objects, glow of lights at night, 4x MSAA
-const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(app.clientWidth * PR, app.clientHeight * PR, { type: THREE.HalfFloatType, samples: 4 }));
+const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(app.clientWidth * PR, app.clientHeight * PR, { type: THREE.HalfFloatType, samples: 2 }));
 composer.setPixelRatio(PR); composer.setSize(app.clientWidth, app.clientHeight);
 composer.addPass(new RenderPass(scene, camera));
 const gtao = new GTAOPass(scene, camera, app.clientWidth, app.clientHeight);
 gtao.updateGtaoMaterial?.({ radius: 5, distanceExponent: 1.4, thickness: 4, scale: 1.25, samples: 16, distanceFallOff: 1 });
 gtao.updatePdMaterial?.({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 16 });
-gtao.enabled = innerWidth > 760;                       // too heavy for phones
+gtao.enabled = false;                                   // ambient occlusion off: too heavy for tablets and laptops
 composer.addPass(gtao);
 const bloom = new UnrealBloomPass(new THREE.Vector2(app.clientWidth, app.clientHeight), .8, .5, .8);
 bloom.enabled = false;
@@ -674,8 +674,8 @@ function bldg(g, x1, x2, z1, z2, h, o = {}) {
 // ---------- ground, fields, meadow ----------
 flat(-3000, 3000, -3000, 3000, T('#5b7a40', TX.grass), -0.4);
 const fieldCols = ['#8ba65c', '#9bb26b', '#7c9a51', '#a8b874', '#86a061'];
-for (const [z1, z2] of [[262, 560], [565, 900], [905, 1300]]) {
-  for (let x = -1500, i = Math.floor(z1 / 100); x < 1500; i++) { const w = rr(110, 260); flat(x, x + w - 4, z1, z2, T(fieldCols[i % 5], TX.field), -0.25); x += w; }
+for (const [z1, z2] of [[262, 560], [565, 800]]) {
+  for (let x = -900, i = Math.floor(z1 / 100); x < 900; i++) { const w = rr(110, 260); flat(x, x + w - 4, z1, z2, T(fieldCols[i % 5], TX.field), -0.25); x += w; }
 }
 { const outer = SITE.map(([x, z]) => [x * 1.12 + (x > 0 ? 6 : -6), z < 0 ? z * 1.14 - 8 : 214]);
   const m = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(outer.map(([x, z]) => new THREE.Vector2(x, -z)))), T('#7c9a55', TX.grass));
@@ -1111,7 +1111,7 @@ function infraMotion(now, wind) {
     o.scale.setScalar(s); o.position.set(x, .25 + .675 * s, z); o.updateMatrix(); im.setMatrixAt(i, o.matrix); im.setColorAt(i, col.set(pickOf(cols)));
     o.position.set(x, .25 + 1.47 * s, z); o.updateMatrix(); heads.setMatrixAt(i, o.matrix);
   });
-  im.castShadow = true; scene.add(im, heads);
+  scene.add(im, heads);
 }
 
 // ---------- bollard lights ----------
@@ -1164,11 +1164,11 @@ SITE.forEach((a, i) => {
   }
 });
 // surrounding forest, kept off the site, the access road and the expressway
-for (let i = 0; i < 16000 && forest.length < 9500; i++) {
-  const x = rr(-1300, 1300), z = rr(-1200, 214);
+for (let i = 0; i < 9000 && forest.length < 3200; i++) {
+  const x = rr(-760, 760), z = rr(-620, 214);
   const d = lineDist(x, z, SITE);
   if (inPoly(x, z) || d < 26 || lineDist(x, z, NE_ROAD, false) < 14) continue;
-  if (d > 600 && rnd() < .5) continue;
+  if (d > 380 && rnd() < .55) continue;
   forest.push([x, z, rr(2, 3), rnd() < .45 ? 3 : 2]);
 }
 { const tones = [['#4b6a30', '#577836', '#62823c', '#44602c'], ['#3f6528', '#4a7030', '#365a24', '#557a36'], ['#3f5e2c', '#4a6a32', '#557638', '#3a5528'], ['#2b4a2b', '#335231', '#294229', '#3a5a34']];
@@ -1192,10 +1192,10 @@ for (let i = 0; i < 16000 && forest.length < 9500; i++) {
       o.position.set(x, th + (conifer ? 0 : r * .7), z); o.scale.set(r, conifer ? r * rr(1.3, 1.7) : r * rr(.95, 1.2), r); o.rotation.y = rnd() * 6; o.updateMatrix(); crowns.setMatrixAt(i, o.matrix);
       crowns.setColorAt(i, col.set(pickOf(tones[tone])));
     });
-    crowns.castShadow = true; crowns.receiveShadow = true; scene.add(crowns);
+    crowns.castShadow = k === 0; crowns.receiveShadow = k === 0; scene.add(crowns);   // only trees on the site cast shadows
     crownSets.push({ im: crowns, conifer: k === 2, base: crowns.instanceColor.array.slice() });
   });
-  trunks.castShadow = true; scene.add(trunks);
+  scene.add(trunks);
 }
 
 { const im = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 1), M('#ffffff', { roughness: .95 }), shrubs.length);
@@ -1247,7 +1247,7 @@ const CAR_COLS = ['#f2f2ef', '#f2f2ef', '#c4c7ca', '#9ea3a8', '#2a2d31', '#1c1e2
 const traffic = (() => {
   const vehicles = [];
   const lanes = [[229.3, -1, 31], [234.8, -1, 37], [243.2, 1, 37], [248.7, 1, 31]];
-  for (const [z, dir, speed] of lanes) for (let x = -1500; x < 1500; x += rr(45, 110)) {
+  for (const [z, dir, speed] of lanes) for (let x = -1500; x < 1500; x += rr(70, 150)) {
     const truck = speed < 35 && rnd() < .45;
     vehicles.push({ x, z, dir, truck, speed: (truck ? speed * .8 : speed) * rr(.9, 1.1), col: truck ? pickOf(['#2c5aa0', '#c8281e', '#e9e9e4']) : pickOf(CAR_COLS) });
   }
@@ -1568,7 +1568,7 @@ const walkers = [];
   [11, 20.5, 43, 53].forEach(z => lines.push(makePath([[-102, z], [-26, z]])));
   [19, 28, 45, 54].forEach(z => lines.push(makePath([[28, z], [142, z]])));
   [[0, -70, -32], [-121, -70, -32], [63, -70, -32], [-107, 126, 165], [123, 126, 165], [-8, 124, 166], [8, 124, 166]].forEach(([x, a, b]) => lines.push(makePath([[x, a], [x, b]])));
-  for (let i = 0; i < 340; i++) { const p = pickOf(lines); walkers.push({ p, s: rr(0, p.total), dir: rnd() < .5 ? 1 : -1, v: rr(1.05, 1.5), off: rr(-1.2, 1.2), ph: rr(0, 6) }); }
+  for (let i = 0; i < 180; i++) { const p = pickOf(lines); walkers.push({ p, s: rr(0, p.total), dir: rnd() < .5 ? 1 : -1, v: rr(1.05, 1.5), off: rr(-1.2, 1.2), ph: rr(0, 6) }); }
 }
 const walkMesh = (() => {
   const body = new THREE.InstancedMesh(new THREE.CapsuleGeometry(.2, .95, 2, 8), M('#ffffff', { roughness: .9 }), walkers.length);
