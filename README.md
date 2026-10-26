@@ -7,8 +7,7 @@ Interaktywny model 3D koncepcji parku handlowego Outlet Park Rzeszów przy drodz
 - obrót, przybliżanie i przesuwanie widoku, kliknięcie budynku pokazuje jego powierzchnię i kondygnacje
 - suwak pory dnia oraz pory roku (lato, jesień, zima)
 - ruch aut i pieszych, fontanna, flagi, ekran LED na pylonie
-- wycieczka kamerą z podpisami
-- spacer z wysokości pieszego (W A S D / strzałki, joystick na telefonie)
+- tryb prezentacji: przelot kamery z podpisami
 - rozbiór kondygnacji budynków dwupoziomowych
 
 ## Uruchomienie
