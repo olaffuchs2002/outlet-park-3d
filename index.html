@@ -294,8 +294,8 @@ const GLA = [
 const OTHER = [
   { id:'rynek', no:'17', name:'Rynek', cat:'Plac centralny', color:'#d9c3b8',
     desc:'Centralny plac z fontanną i zielenią. Krzyżują się tu dwa główne deptaki (na szkicu: kolor różowy).' },
-  { id:'pz', no:'18', name:'Mały park zabaw', area:4000, cat:'Rekreacja · plenerowy', color:'#f07f2b',
-    desc:'Plac zabaw dla dzieci (ok. 4 000 m²) między Gym & Padel a Fly Parkiem.' },
+  { id:'pz', no:'18', name:'Mały park zabaw', area:1500, cat:'Rekreacja · plenerowy', color:'#f07f2b',
+    desc:'Plac zabaw dla dzieci (ok. 1 500 m²) pośrodku parku między Gym & Padel a Fly Parkiem.' },
   { id:'hotel', no:'19', name:'Hotel', cat:'Usługi · 8 kondygnacji', color:'#b4874f',
     desc:'Hotel przy drodze, w południowo-zachodniej części działki.' },
   { id:'mcd', no:'20', name:'McDonald’s', cat:'Gastronomia · drive-thru', color:'#f2b705',
@@ -838,6 +838,63 @@ box(scene, -3000, 3000, 238.6, 239.4, .9, M('#b9bcbe'), 0.1);
   pts.forEach(([x, z], i) => { o.rotation.x = -Math.PI / 2; o.position.set(x, 0.17, z); o.updateMatrix(); im.setMatrixAt(i, o.matrix); });
   scene.add(im); }
 
+// ---------- A4 motorway east of the park, crossing over S8 at a cloverleaf interchange ----------
+const A4X = 720, A4Z = 239;
+const a4h = z => { const d = Math.abs(z - A4Z); return d < 90 ? 9 : d > 260 ? .12 : 9 - (d - 90) / 170 * 8.88; };   // deck rises to 9 m over S8
+{ const concrete = new THREE.MeshStandardMaterial({ color: '#b9bcbe', roughness: .8, side: THREE.DoubleSide });
+  const geos = { road: [], line: [], wall: [] };
+  const frame = (P, i) => { const a = P[Math.max(0, i - 1)], b = P[Math.min(P.length - 1, i + 1)], tx = b[0] - a[0], tz = b[2] - a[2], l = Math.hypot(tx, tz) || 1; return [-tz / l, tx / l]; };
+  // flat band along [x, y, z] points, w wide and shifted sideways by off; uv in metres for the tiled asphalt
+  const band = (P, w, off = 0, dy = 0) => {
+    const pos = [], uv = [], idx = []; let L = 0;
+    P.forEach((p, i) => { const [nx, nz] = frame(P, i); if (i) L += Math.hypot(p[0] - P[i - 1][0], p[2] - P[i - 1][2]);
+      for (const sd of [-.5, .5]) { const o = off + sd * w; pos.push(p[0] + nx * o, p[1] + dy, p[2] + nz * o); uv.push(o, L); }
+      if (i) { const k = i * 2; idx.push(k - 2, k - 1, k, k - 1, k + 1, k); } });
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
+    g.computeVertexNormals(); if (g.attributes.normal.getY(0) < 0) { g.setIndex(idx.map((v, i) => idx[i - i % 3 + (2 - i % 3)])); g.computeVertexNormals(); }
+    return g; };
+  // vertical strip along the same points: parapets and deck edges
+  const side = (P, off, h0, h1) => {
+    const pos = [], idx = [];
+    P.forEach((p, i) => { const [nx, nz] = frame(P, i); pos.push(p[0] + nx * off, p[1] + h0, p[2] + nz * off, p[0] + nx * off, p[1] + h1, p[2] + nz * off);
+      if (i) { const k = i * 2; idx.push(k - 2, k, k - 1, k - 1, k, k + 1); } });
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g; };
+  const piers = [], pier = (x, y, z) => { if (y > 2.5) piers.push([x, y - 1.3, z]); };
+  // carriageway with edge walls, edge lines and piers where it is up in the air
+  const road = (P, w, lines = true) => {
+    geos.road.push(band(P, w));
+    for (const o of [-w / 2, w / 2]) { geos.wall.push(side(P, o, -1.3, .9)); if (lines) geos.line.push(band(P, .25, o - Math.sign(o) * .7, .03)); }
+    P.forEach((p, i) => { if (i % 3 === 0) pier(p[0], p[1], p[2]); });
+  };
+  // main line: two 13.5 m carriageways either side of a concrete barrier
+  const A4 = []; for (let z = -1600; z <= 2000; z += 6) A4.push([A4X, a4h(z), z]);
+  geos.road.push(band(A4, 30));
+  for (const o of [-15, 15]) geos.wall.push(side(A4, o, -1.3, .9));
+  geos.wall.push(side(A4, 0, 0, .9));
+  for (const o of [-14.2, -1.3, 1.3, 14.2]) geos.line.push(band(A4, .25, o, .03));
+  for (let z = -1600; z < 2000; z += 15) for (const o of [-7.75, 7.75]) geos.line.push(band([[A4X, a4h(z), z], [A4X, a4h(z + 6), z + 6]], .25, o, .03));
+  A4.forEach(([x, y, z], i) => { if (i % 4 || (z > 221 && z < 257)) return; pier(x - 7, y, z); pier(x + 7, y, z); });
+  pier(A4X - 4, 9, A4Z); pier(A4X + 4, 9, A4Z);                                        // on the S8 median
+  // ramps in each quadrant (u away from the crossing along S8, v away from S8 along A4)
+  const smooth = t => t * t * (3 - 2 * t);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const toW = (u, v, y) => [A4X + sx * u, y, A4Z + sz * v];
+    // loop: 270° round a 40 m circle, from S8 up onto A4
+    const loop = [], A = -Math.PI / 2;
+    for (let i = 0; i <= 90; i++) { const t = i / 90, a = A + t * 1.5 * Math.PI; loop.push(toW(56 + 40 * Math.cos(a), 56 + 40 * Math.sin(a), .12 + (a4h(A4Z + sz * 56) - .12) * smooth(t))); }
+    road(loop, 6.5);
+    // outer connector swinging round the far side of the loop
+    const curve = new THREE.CatmullRomCurve3([[180, 15], [130, 40], [106, 90], [60, 115], [16, 150], [16, 200]].map(([u, v]) => new THREE.Vector3(u, 0, v)));
+    const endY = a4h(A4Z + sz * 200), outer = curve.getSpacedPoints(80).map((p, i) => toW(p.x, p.z, .12 + (endY - .12) * smooth(i / 80)));
+    road(outer, 6.5);
+  }
+  const add = (list, mat, shadow) => { const g = mergeGeometries(list); const m = new THREE.Mesh(g, mat); m.receiveShadow = true; m.castShadow = shadow; scene.add(m); };
+  add(geos.road, asphalt, true); add(geos.line, white, false); add(geos.wall, concrete, true);
+  const pm = new THREE.InstancedMesh(new THREE.CylinderGeometry(.8, .9, 1, 10), concrete, piers.length), o = new THREE.Object3D();
+  piers.forEach(([x, h, z], i) => { o.position.set(x, h / 2, z); o.scale.set(1, h, 1); o.updateMatrix(); pm.setMatrixAt(i, o.matrix); });
+  pm.castShadow = true; scene.add(pm);
+}
+
 // ---------- trees ----------
 const trees = [], forest = [];
 const tree = (x, z, s = 1, tone = 0) => trees.push([x, z, s, tone]);
@@ -976,32 +1033,32 @@ lot(-196, -112, 82, 104, null, false, false);            // in front of Kaufland
   });
   bldg(g, -250, -140, -95, -67, 13, { fit: FIT, levels: 2, wall: '#3d434d', faces: ['s'], text: 'GYM & PADEL', signBg: '#8c5ec8', hvac: false });
 }
-// 18 children's playground (about 4 000 m²), in the middle of one park between Gym & Padel and Fly Park, reached by paved alleys
+// 18 children's playground (about 1 500 m²), in the middle of one park between Gym & Padel and Fly Park, reached by paved alleys
 const PARK = [-68, 21, -140, -70];                                    // narrower, towards Fly Park; the car park west of it took the rest
 { const [px1, px2, pz1, pz2] = PARK, grass = T('#7fa85a', TX.grass), path = T('#d8cfc2', TX.slab);
   flat(px1, px2, pz1, pz2, grass, 0.3);
-  const X1 = -54.5, X2 = 7.5, Z1 = -137, Z2 = -73, cxp = (X1 + X2) / 2, czp = (Z1 + Z2) / 2;
+  const X1 = -43.5, X2 = -3.5, Z1 = -123.75, Z2 = -86.25, cxp = (X1 + X2) / 2, czp = (Z1 + Z2) / 2;
   // alleys: a loop round the playground and four paths out to the park's edges
-  flat(X1 - 6, X2 + 6, Z1 - 1, Z1 + 0, path, .32); flat(X1 - 6, X2 + 6, Z2, Z2 + 3, path, .32);
-  flat(X1 - 6, X1 - 3, Z1 - 1, Z2 + 3, path, .32); flat(X2 + 3, X2 + 6, Z1 - 1, Z2 + 3, path, .32);
+  flat(X1 - 6, X2 + 6, Z1 - 6, Z1 - 3, path, .32); flat(X1 - 6, X2 + 6, Z2 + 3, Z2 + 6, path, .32);   // loop 3 m wide, 3 m clear of the playground fence
+  flat(X1 - 6, X1 - 3, Z1 - 6, Z2 + 6, path, .32); flat(X2 + 3, X2 + 6, Z1 - 6, Z2 + 6, path, .32);
   flat(px1, X1 - 6, czp - 1.5, czp + 1.5, path, .32); flat(X2 + 6, px2, czp - 1.5, czp + 1.5, path, .32);
-  flat(cxp - 2, cxp + 2, Z2 + 3, pz2, path, .32);
-  strip([X1 - 4.5, Z2 + 1.5], [px1 + 2, pz2], 3, path, .32); strip([X2 + 4.5, Z2 + 1.5], [px2 - 2, pz2], 3, path, .32);
-  for (let k = 0; k < 9; k++) { const x = X1 - 4.5 + k * (X2 - X1 + 9) / 8; box(scene, x - .8, x + .8, Z2 + 3.4, Z2 + 3.9, .45, M('#b5895c', { roughness: .8 }), .3, false); }   // benches along the loop
+  flat(cxp - 1.5, cxp + 1.5, Z2 + 6, pz2, path, .32);
+  strip([X1 - 4.5, Z2 + 4.5], [px1 + 2, pz2], 3, path, .32); strip([X2 + 4.5, Z2 + 4.5], [px2 - 2, pz2], 3, path, .32);
+  for (let k = 0; k < 9; k++) { const x = X1 - 4.5 + k * (X2 - X1 + 9) / 8; box(scene, x - .8, x + .8, Z2 + 6.4, Z2 + 6.9, .45, M('#b5895c', { roughness: .8 }), .3, false); }   // benches along the loop
   for (let i = 0, n = 0; i < 400 && n < 70; i++) {                                    // park trees, kept off the alleys and the playground
     const x = rr(px1 + 3, px2 - 3), z = rr(pz1 + 3, pz2 - 3);
-    if (x > X1 - 9 && x < X2 + 9 && z > Z1 - 4 && z < Z2 + 6) continue;
+    if (x > X1 - 9 && x < X2 + 9 && z > Z1 - 9 && z < Z2 + 9) continue;
     if (Math.abs(z - czp) < 4.5 || (Math.abs(x - cxp) < 5 && z > Z2)) continue;
-    if (Math.abs((z - (Z2 + 1.5)) * (px1 + 2 - (X1 - 4.5)) - (x - (X1 - 4.5)) * (pz2 - (Z2 + 1.5))) / Math.hypot(px1 + 2 - X1 + 4.5, pz2 - Z2 - 1.5) < 4) continue;
-    if (Math.abs((z - (Z2 + 1.5)) * (px2 - 2 - (X2 + 4.5)) - (x - (X2 + 4.5)) * (pz2 - (Z2 + 1.5))) / Math.hypot(px2 - 2 - X2 - 4.5, pz2 - Z2 - 1.5) < 4) continue;
+    if (Math.abs((z - (Z2 + 4.5)) * (px1 + 2 - (X1 - 4.5)) - (x - (X1 - 4.5)) * (pz2 - (Z2 + 4.5))) / Math.hypot(px1 + 2 - X1 + 4.5, pz2 - Z2 - 4.5) < 4) continue;
+    if (Math.abs((z - (Z2 + 4.5)) * (px2 - 2 - (X2 + 4.5)) - (x - (X2 + 4.5)) * (pz2 - (Z2 + 4.5))) / Math.hypot(px2 - 2 - X2 - 4.5, pz2 - Z2 - 4.5) < 4) continue;
     tree(x, z, rr(.9, 1.3), 1); n++;
   }
   const g = bgroup('pz');
   flat(X1, X2, Z1, Z2, M('#c8613f'), 0.33, g);
-  flat(X1 + 6, X1 + 30, Z1 + 8, Z1 + 30, M('#4aa35a'), 0.36, g); flat(X2 - 26, X2 - 6, Z2 - 26, Z2 - 6, M('#2fa5d8'), 0.36, g);
+  flat(X1 + 4, X1 + 18, Z1 + 4, Z1 + 18, M('#4aa35a'), 0.36, g); flat(X2 - 16, X2 - 4, Z2 - 16, Z2 - 4, M('#2fa5d8'), 0.36, g);
   const cols = ['#e5493a', '#f2c12e', '#36a852', '#2fa5d8', '#9c55c9'];
-  for (let i = 0; i < 30; i++) { const x = rr(X1 + 3, X2 - 6), z = rr(Z1 + 3, Z2 - 6), sz = rr(1.5, 4); box(g, x, x + sz, z, z + sz * .7, rr(.8, 3.5), M(pickOf(cols)), .3); }
-  [[X1 + 20, Z1 + 40], [X2 - 18, Z1 + 16]].forEach(([x, z]) => { const sl = box(g, x, x + 2, z, z + 10, .3, M('#f2c12e'), 1.9); sl.rotation.x = .35; });
+  for (let i = 0; i < 16; i++) { const x = rr(X1 + 3, X2 - 6), z = rr(Z1 + 3, Z2 - 6), sz = rr(1.5, 4); box(g, x, x + sz, z, z + sz * .7, rr(.8, 3.5), M(pickOf(cols)), .3); }
+  [[X1 + 22, Z1 + 20], [X2 - 10, Z1 + 6]].forEach(([x, z]) => { const sl = box(g, x, x + 2, z, z + 10, .3, M('#f2c12e'), 1.9); sl.rotation.x = .35; });
   const fence = M('#5b5f62');
   box(g, X1, X2, Z1 - .2, Z1, 1.1, fence, .3, false); box(g, X1, cxp - 3, Z2, Z2 + .2, 1.1, fence, .3, false); box(g, cxp + 3, X2, Z2, Z2 + .2, 1.1, fence, .3, false);   // gate facing the square
   box(g, X1 - .2, X1, Z1, Z2, 1.1, fence, .3, false); box(g, X2, X2 + .2, Z1, Z2, 1.1, fence, .3, false);
@@ -1024,7 +1081,6 @@ const PARK = [-68, 21, -140, -70];                                    // narrowe
   const umb = M('#f1ebdd'), pole = M('#5b5f62');
   for (let x = fp.x1 + 26; x < fp.x1 + 52; x += 5) { const u = new THREE.Mesh(new THREE.ConeGeometry(1.6, .7, 8), umb); u.position.set(x, 2.5, fp.z2 + 4.7); u.castShadow = true; g.add(u); box(g, x - .06, x + .06, fp.z2 + 4.64, fp.z2 + 4.76, 2.2, pole, 0, false); }
 }
-strip([-66, -110], [21, -99], 3, pave, 0.33);
 // Biura 1B 2B 3B: three long office buildings across the west ring road (3 600 m² each, 3 storeys)
 // the group is turned to run parallel to the west boundary: local z along the road, local +x towards the site, 2B at the pivot
 { const g = bgroup('bB'), th = Math.atan2(90, 350);
@@ -1564,7 +1620,7 @@ SITE.forEach((a, i) => {
 for (let i = 0; i < 9000 && forest.length < 3200; i++) {
   const x = rr(-760, 760), z = rr(-620, 214);
   const d = lineDist(x, z, SITE);
-  if (inPoly(x, z) || d < 26 || lineDist(x, z, NE_ROAD, false) < 14 || solids.some(([a, b, c, e]) => x > a - 8 && x < b + 8 && z > c - 8 && z < e + 8)) continue;
+  if (inPoly(x, z) || d < 26 || lineDist(x, z, NE_ROAD, false) < 14 || Math.abs(x - A4X) < 32 || (Math.abs(x - A4X) < 240 && Math.abs(z - A4Z) < 240) || solids.some(([a, b, c, e]) => x > a - 8 && x < b + 8 && z > c - 8 && z < e + 8)) continue;
   if (d > 380 && rnd() < .55) continue;
   forest.push([x, z, rr(2, 3), rnd() < .45 ? 3 : 2]);
 }
@@ -1720,7 +1776,9 @@ function roadLabel(text, x, y, z) {
 }
 roadLabel('S8 · droga ekspresowa', -200, 4, 239);
 roadLabel('← Warszawa', -650, 4, 232);
-roadLabel('Rzeszów →', 650, 4, 246);
+roadLabel('Rzeszów →', 480, 4, 246);
+roadLabel('A4 · autostrada', A4X, 14, -330);
+roadLabel('Węzeł S8 / A4', A4X + 130, 6, A4Z + 130);
 roadLabel('Wjazd i wyjazd', -203, 4, 214);
 roadLabel('Wjazd i wyjazd', 25, 4, 214);
 roadLabel('Droga dojazdowa', 352, 4, -250);
