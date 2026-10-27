@@ -1044,21 +1044,21 @@ strip([-66, -110], [21, -99], 3, pave, 0.33);
 // 7 Lidl, 8 Dom i Ogród
 // Lidl delivery yard on the east side: asphalt apron, yellow hatching and bay lines, an articulated lorry at the dock
 { const yard = M('#4f5357', { roughness: .95 }), yellow = M('#f2c12e', { roughness: .7 });
-  box(scene, 215, 262, -23, 4.5, .26, asphalt, 0, false); paved.push([215, 262, -23, 7]);         // yard runs out to the line of Dom i Ogród's east wall
-  box(scene, 215, 265, 4.5, 7, .4, pave, 0, false);                                                   // sidewalk along Dom i Ogród's north wall, joining the one on its east side
+  box(scene, 215, 262, -23, 7, .26, asphalt, 0, false); paved.push([215, 262, -23, 7]);           // yard runs out to the line of Dom i Ogród's east wall
+  box(scene, 256, 265, 100, 104, .25, pave, 0, false); paved.push([256, 265, 100, 104]);          // front sidewalk carried round Dom i Ogród's south-east corner
   box(scene, 238, 252, -24.4, -23, .26, asphalt, 0, false); roadRects.push([238, 252, -26, -22]);  // drive-in from the link road
   // mesh fence on posts along the road side and the east side, open only at the gate
   const post = M('#5b6166', { metalness: .5, roughness: .4 }), mesh = M('#9aa3a8', { transparent: true, opacity: .32, roughness: .6, side: THREE.DoubleSide, depthWrite: false });
   const fence = (ax, az, bx, bz) => { const len = Math.hypot(bx - ax, bz - az), n = Math.max(1, Math.round(len / 2.5));
     const p = new THREE.Mesh(new THREE.PlaneGeometry(len, 1.9), mesh); p.position.set((ax + bx) / 2, .26 + .95, (az + bz) / 2); p.rotation.y = -Math.atan2(bz - az, bx - ax); scene.add(p);
     for (let i = 0; i <= n; i++) { const x = ax + (bx - ax) * i / n, z = az + (bz - az) * i / n; box(scene, x - .05, x + .05, z - .05, z + .05, 2, post, .26, false); } };
-  fence(215.2, -22.8, 238, -22.8); fence(252, -22.8, 261.8, -22.8); fence(261.8, -22.8, 261.8, 4.4);
+  fence(215.2, -22.8, 238, -22.8); fence(252, -22.8, 261.8, -22.8); fence(261.8, -22.8, 261.8, 6.8);
   // barrier at the gate: housing, red and white boom resting closed
   box(scene, 251.6, 252.4, -23.6, -23, 1.1, M('#e8e4dc', { roughness: .5 }), .26);
   { const boom = new THREE.Group(); boom.position.set(252, 1.2, -23.3);
     for (let i = 0; i < 14; i++) { const seg = new THREE.Mesh(new THREE.BoxGeometry(1, .1, .1), M(i % 2 ? '#ffffff' : '#c8281e', { roughness: .5 })); seg.position.x = -.5 - i; boom.add(seg); }
     scene.add(boom); }
-  for (let z = -20; z <= 0; z += 8) flat(215.5, 232, z - .08, z + .08, yellow, .27);                   // dock bay lines (on the raised yard)
+  for (let z = -20; z <= 4; z += 8) flat(215.5, 232, z - .08, z + .08, yellow, .27);                   // dock bay lines (on the raised yard)
   for (let x = 236; x < 254; x += 1.6) flat(x, x + .5, -22, -16, yellow, .27);                          // keep-clear hatching
   const lorry = new THREE.Group(), white2 = M('#eef0f0', { roughness: .5 }), dark = M('#2b3036', { roughness: .6 }), blue = M('#1f4fa0', { roughness: .5 });
   box(lorry, 0, 13.6, -1.25, 1.25, 2.9, white2, .9); box(lorry, 0, 13.6, -1.27, -1.25, .6, blue, 2.6, false); box(lorry, 0, 13.6, 1.25, 1.27, .6, blue, 2.6, false);
