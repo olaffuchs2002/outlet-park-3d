@@ -865,8 +865,8 @@ function lotRow(x1, x2, z1, ly = .27) {
   xs.forEach(x => { stalls++; if (rnd() < .74) cars.push([x + 1.25, z1 + 2.5, rnd() < .5 ? 0 : Math.PI, ly]); });
   solids.push([x1, x2, z1, z1 + 5]);
 }
-// single column of 5 m stalls along z, entered from the aisle on its east side
-function lotCol(x1, z1, z2, ly = .14) {
+// single column of 5 m stalls along z, entered from the aisle on its east side (west = true: on its west side)
+function lotCol(x1, z1, z2, west = false, ly = .14) {
   const S = 6, cw = 5 * S, ch = Math.round((z2 - z1) * S), zs = [];
   for (let z = z1; z + 2.5 <= z2 + .01; z += 2.5) zs.push(z);
   const tex = canvasTex(cw, ch, (c) => {
@@ -877,15 +877,19 @@ function lotCol(x1, z1, z2, ly = .14) {
     c.stroke();
   });
   flat(x1, x1 + 5, z1, z2, M('#ffffff', { map: tex, roughness: .95 }), ly);
-  zs.forEach(z => { stalls++; if (rnd() < .74) cars.push([x1 + 2.5 + rr(-.12, .12), z + 1.25, -Math.PI / 2, ly]); });
+  zs.forEach(z => { stalls++; if (rnd() < .74) cars.push([x1 + 2.5 + rr(-.12, .12), z + 1.25, west ? Math.PI / 2 : -Math.PI / 2, ly]); });
   solids.push([x1, x1 + 5, z1, z2]);
 }
 lot(-255, 228, -61, -25, [-57, -47]);                        // 6 — north parking, up to the north-east road
 lot(-200, 15, 112, 158, null, false, false);                  // 24 — west part, one grid from the hotel side to the main entrance
+lotCol(-205, 112, 158);                                       // extra column in the grass wedge by the west ring road, facing car park 24's first aisle
+lotCol(-210, 112, 158, true);                                 // and one more facing west, onto an aisle that fills the wedge up to the ring road
+{ const m = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape([[-224, 112], [-210, 112], [-210, 158], [-211, 158]].map(([x, z]) => new THREE.Vector2(x, -z)))), asphalt);
+  m.rotation.x = -Math.PI / 2; m.position.y = .1; m.receiveShadow = true; scene.add(m); }
 lot(35, 286, 112, 158, [41, 51], false, false);               // 24 — east of the main entrance
 road(-206, 292, 158, 165);                                    // front service road along the whole pad row, hotel to car wash
 lot(-136, -92, 165, 190, null, false, false);                 // pad row between the hotel and McDonald's
-lot(-207, -185, 165, 190, null, false, false);                // west of the hotel, off the service road and the ring road
+lot(-200, -178, 165, 190, null, false, false);                // west of the hotel, same columns as car park 24 across the service road
 lot(-40, 15, 165, 190, null, false, false);                   // pad row between McDonald's and the main entrance, same grid
 lot(-282, -142, -138, -97, null, false, false, .27);          // behind Gym & Padel, off the north ring road
 lot(-226, -206, -20, 104, null, false, false);                // strip along the west ring road, off the cross road
@@ -940,12 +944,17 @@ flat(-66, 21, -140, -70, T('#7fa85a', TX.grass), 0.3);
 for (let i = 0; i < 46; i++) tree(rr(-64, 18), rr(-137, -73), rr(.9, 1.3), 1);
 strip([-66, -110], [21, -99], 3, pave, 0.33);
 // Biura 1B 2B 3B: three long office buildings across the west ring road (3 600 m² each, 3 storeys)
-{ const g = bgroup('bB');
-  const edgeX = z => -300 + (z + 150) / 350 * 90;           // west boundary of the site at depth z
-  [['1B', -272, 70], ['2B', -295, -20], ['3B', -318, -110]].forEach(([n, x, z]) => {
-    flat(x - 5, x + 25, z - 5, z + 65, paveGrey, 0.06);
-    strip([x + 20, z + 30], [edgeX(z + 30), z + 30], 3, paveGrey, 0.07);
-    const ob = bldg(g, x, x + 20, z, z + 60, 11.5, { fit: FIT, facade: 'glass', levels: 3, greenRoof: true, faces: ['n', 's', 'e', 'w'], canopy: false, hvac: false });
+// the group is turned to run parallel to the west boundary: local z along the road, local +x towards the site, 2B at the pivot
+{ const g = bgroup('bB'), th = Math.atan2(90, 350);
+  g.position.set(-285, 0, 10); g.rotation.y = th;
+  [['1B', 93], ['2B', 0], ['3B', -93]].forEach(([n, lz]) => {
+    flat(-15, 15, lz - 35, lz + 35, paveGrey, 0.06, g);
+    flat(10, 25.5, lz - 1.5, lz + 1.5, paveGrey, 0.07, g);                    // footpath to the ring road
+    const n0 = solids.length;
+    const ob = bldg(g, -10, 10, lz - 30, lz + 30, 11.5, { fit: FIT, facade: 'glass', levels: 3, greenRoof: true, noAO: true, faces: ['n', 's', 'e', 'w'], canopy: false, hvac: false });
+    solids.length = n0;                                                        // bldg records local coordinates; record the turned footprint instead
+    const cx = -285 + lz * Math.sin(th), cz = 10 + lz * Math.cos(th), hx = 10 * Math.cos(th) + 30 * Math.sin(th), hz = 10 * Math.sin(th) + 30 * Math.cos(th);
+    solids.push([cx - hx - 1.5, cx + hx + 1.5, cz - hz - 1.5, cz + hz + 1.5]);
     faceSign(g, 'e', n, ob.x1, ob.x2, ob.z1, ob.z2, 10.4, 3, 1.4, '#7d8ba0', '#ffffff');
   });
 }
@@ -1017,8 +1026,9 @@ strip([-66, -110], [21, -99], 3, pave, 0.33);
   box(g, tx1 + 3, tx1 + 11, tz1 + 3, tz2 - 3, 3, dark, H + 1.4);                               // rooftop bar pavilion
   box(g, -166, -154, 188, 193, .45, dark, 4.3);                                                   // cantilevered entrance canopy
   sign(g, 'HOTEL', (tx1 + tx2) / 2, H - 1.3, tz2 + .7, 8, 1.8, '#1d262d', '#ffffff');
-  solids.push([-181, -139, 166, 194]);
-  aoShadow(-179, -141, 168, 188, .1);
+  g.position.x = 3;                                      // moved 3 m east so the car park beside it keeps the grid of car park 24
+  solids.push([-178, -136, 166, 194]);
+  aoShadow(-176, -138, 168, 188, .1);
 }
 // 20 McDonald's with drive-thru lane
 { const g = bgroup('mcd');
@@ -1422,7 +1432,7 @@ const CAR_COLS = ['#f2f2ef', '#f2f2ef', '#c4c7ca', '#9ea3a8', '#2a2d31', '#1c1e2
     const b = SITE[(i + 1) % SITE.length], s = inward(a, b), len = Math.hypot(b[0] - a[0], b[1] - a[1]);
     const nx = -(b[1] - a[1]) / len * s, nz = (b[0] - a[0]) / len * s;
     for (let d = 15; d < len - 10; d += 35) { const x = a[0] + (b[0] - a[0]) * d / len + nx * 14.5, z = a[1] + (b[1] - a[1]) * d / len + nz * 14.5;
-      if (!(x > -233 && x < -224 && z > -22 && z < 74)) pts.push([x, z]); }   // none on the stall column in the west wedge
+      if (!(x > -233 && x < -224 && z > -22 && z < 74) && !(x > -225 && x < -199 && z > 110 && z < 160)) pts.push([x, z]); }   // none on the stall columns in the west wedges
   });
   for (let x = -250; x < 210; x += 30) { pts.push([x, -61.6]); pts.push([x, -25.4]); }
   for (let x = -195; x < 280; x += 30) if (Math.abs(x) > 12) { pts.push([x, 104.3]); if (x > -184) pts.push([x, 165.5]); }
@@ -1855,6 +1865,7 @@ function explode(id) {
       }
     }
   });
+  ex.position.copy(groups[id].position); ex.rotation.copy(groups[id].rotation);   // turned groups (offices) explode in place
   groups[id].visible = false; scene.add(ex);
   exploded = { id, ex, parts, els, start: performance.now() };
 }
