@@ -753,7 +753,7 @@ flat(18, 32, -24, 104, pavePink, 0.33); flat(5, 47, 32, 50, pavePink, 0.36);
 // walkways on both sides of the 15 and 16 strips (equal gaps to their neighbours)
 flat(-105, 18, 20, 35.5, pavePink, 0.36); flat(-105, 18, 46.5, 62, pavePink, 0.36);
 flat(32, 155, 20, 35.5, pavePink, 0.36); flat(32, 155, 46.5, 62, pavePink, 0.36);
-flat(-282, 128, -67, -62, pavePink, 0.3);
+flat(-282, 178, -67, -62, pavePink, 0.3);
 
 // perimeter road (green on the sketch) with a centre line
 const white = M('#f3f3ef', { roughness: .7 });
@@ -859,9 +859,11 @@ function lotRow(x1, x2, z1, ly = .27) {
   solids.push([x1, x2, z1, z1 + 5]);
 }
 lot(-255, 228, -61, -25, [-57, -47]);                        // 6 — north parking, up to the north-east road
-lot(-200, 15, 112, 165, null, false, false);                  // 24 — west of the main entrance; columns run on into the pad row below
+lot(-200, -96, 112, 165, null, false, false);                 // 24 — west part, up to the McDonald's road
+lot(-88, 15, 112, 165, null, false, false);                   // 24 — between the McDonald's road and the main entrance
+road(-96, -88, 104, 190);                                     // road past McDonald's, from the cross road to the ring road
 lot(35, 286, 112, 165, [41, 51], false);                      // 24 — east of the main entrance
-lot(-136, -93, 165, 190, null, false, false);                 // pad row between the hotel and McDonald's, on the same column grid as 24
+lot(-136, -96, 165, 190, null, false, false);                 // pad row between the hotel and the McDonald's road
 lot(-40, 15, 165, 190, null, false, false);                   // pad row between McDonald's and the main entrance, same grid
 lot(-282, -142, -138, -97, null, false, false, .27);          // behind Gym & Padel, off the north ring road
 lot(-226, -206, -20, 104, null, false, false);                // strip along the west ring road, off the cross road
@@ -905,14 +907,15 @@ lot(-198, -112, 82, 104, null, false, false, .27);            // in front of Kau
     c.fillStyle = '#a6abae'; c.fillRect(w * .78, 0, w * .22, h);       // restaurant roof
   });
   const g = bgroup('b5');
-  const fp = bldg(g, -12, 125, -140, -67, 12, { fit: FIT, wall: '#3a5a92', faces: ['s', 'w'], portalAt: .08, text: 'FLY PARK · RESTAURACJA', signW: 30, signBg: '#3b7bd6', hvac: false });
+  const fp = bldg(g, 25, 175, -140, -67, 12, { fit: FIT, cut: { cx: 1490.6, cz: -1615, r: 2000, corner: .3 },   // corner at the square's axis; NE corner cut parallel to the access road
+    wall: '#3a5a92', faces: ['s', 'w'], portalAt: .08, text: 'FLY PARK · RESTAURACJA', signW: 30, signBg: '#3b7bd6', hvac: false });
   box(g, fp.x1 - .3, fp.x1, fp.z1 + 1, fp.z2 - 1, 9.4, winMat, 0, false);   // fully glazed west side, facing the path from the square
   const umb = M('#f1ebdd'), pole = M('#5b5f62');
   for (let x = fp.x1 + 26; x < fp.x1 + 52; x += 5) { const u = new THREE.Mesh(new THREE.ConeGeometry(1.6, .7, 8), umb); u.position.set(x, 2.5, fp.z2 + 4.7); u.castShadow = true; g.add(u); box(g, x - .06, x + .06, fp.z2 + 4.64, fp.z2 + 4.76, 2.2, pole, 0, false); }
 }
-flat(-66, -18, -140, -70, T('#7fa85a', TX.grass), 0.3);
-for (let i = 0; i < 26; i++) tree(rr(-64, -20), rr(-137, -73), rr(.9, 1.3), 1);
-strip([-66, -110], [-18, -99], 3, pave, 0.33);
+flat(-66, 21, -140, -70, T('#7fa85a', TX.grass), 0.3);
+for (let i = 0; i < 46; i++) tree(rr(-64, 18), rr(-137, -73), rr(.9, 1.3), 1);
+strip([-66, -110], [21, -99], 3, pave, 0.33);
 // Biura 1B 2B 3B: three long office buildings across the west ring road (3 600 m² each, 3 storeys)
 { const g = bgroup('bB');
   const edgeX = z => -300 + (z + 150) / 350 * 90;           // west boundary of the site at depth z
