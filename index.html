@@ -760,14 +760,13 @@ const white = M('#f3f3ef', { roughness: .7 });
 const bikeMat = T('#a8503c', TX.asphalt, { roughness: .9 });
 const cx0 = SITE.reduce((s, p) => s + p[0], 0) / SITE.length, cz0 = SITE.reduce((s, p) => s + p[1], 0) / SITE.length;
 const inward = (a, b) => { const dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz), nx = -dz / l, nz = dx / l; const mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2; return ((cx0 - mx) * nx + (cz0 - mz) * nz) > 0 ? 1 : -1; };
-// ring road as one continuous band with mitred corners, and its centre line as a thin ring
+// ring road as one continuous band with mitred corners (internal roads carry no lane markings)
 function ringBand(dOut, dIn, mat, y) {
   const outer = shapeOf(dOut > 0 ? insetSite(dOut) : SITE), inner = shapeOf(insetSite(dIn));
   outer.holes.push(inner);
   const m = new THREE.Mesh(new THREE.ShapeGeometry(outer), mat); m.rotation.x = -Math.PI / 2; m.position.y = y; m.receiveShadow = true; scene.add(m);
 }
 ringBand(0, 10, asphalt, 0.1);
-ringBand(4.88, 5.12, white, 0.17);
 // main entrance from S8 and the north-east access road
 const road = (x1, x2, z1, z2) => flat(x1, x2, z1, z2, asphalt, 0.1);
 road(-205, -191, 196, 226); road(-300, -100, 219, 226);                   // second entry and exit from S8, beyond the hotel, with slip lanes
@@ -859,13 +858,10 @@ function lotRow(x1, x2, z1, ly = .27) {
   solids.push([x1, x2, z1, z1 + 5]);
 }
 lot(-255, 228, -61, -25, [-57, -47]);                        // 6 — north parking, up to the north-east road
-lot(-200, -96, 112, 158, null, false, false);                 // 24 — west part, up to the McDonald's road
-lot(-88, 15, 112, 158, null, false, false);                   // 24 — between the McDonald's road and the main entrance
-road(-96, -88, 104, 190);                                     // road past McDonald's, from the cross road to the ring road
+lot(-200, 15, 112, 158, null, false, false);                  // 24 — west part, one grid from the hotel side to the main entrance
 lot(35, 286, 112, 158, [41, 51], false, false);               // 24 — east of the main entrance
 road(-206, 292, 158, 165);                                    // front service road along the whole pad row, hotel to car wash
-for (let x = -200; x < 288; x += 8) flat(x, x + 4, 161.4, 161.6, white, .17);
-lot(-136, -96, 165, 190, null, false, false);                 // pad row between the hotel and the McDonald's road
+lot(-136, -92, 165, 190, null, false, false);                 // pad row between the hotel and McDonald's
 lot(-40, 15, 165, 190, null, false, false);                   // pad row between McDonald's and the main entrance, same grid
 lot(-282, -142, -138, -97, null, false, false, .27);          // behind Gym & Padel, off the north ring road
 lot(-226, -206, -20, 104, null, false, false);                // strip along the west ring road, off the cross road
