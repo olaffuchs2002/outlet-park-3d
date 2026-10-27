@@ -921,9 +921,9 @@ lot(-255, 231, -62, -24, [-58, -48]);                        // 6 — north park
   flatShape(P, asphalt, .09); pavedFns.push((x, z) => inPoly(x, z, P)); }
 road(225, 237, -62, -55);                                     // car park 6's north aisle out to the ring road
 road(231, 263, -30, -24);                                     // link road along Lidl's delivery yard, from car park 6 out to the east ring road
-lotRow(232.5, 252.5, -35, .14, 0, false); lotRow(232.5, 252.5, -40, .14, Math.PI, false);   // two rows back to back: one off the link road, one off the aisle above
-islands.push([231.2, 232.35, -39.85, -30.15, .14], [252.65, 253.8, -39.85, -30.15, .14], [232.5, 252.5, -35.2, -34.8, .14]);   // shared end islands and a thin median, as in the other car parks
-[236.25, 243.75, 251.25].forEach(x => tree(x - 2.5, -35, rr(.8, 1), 1));
+lotCol(231, -50, -30, true); lotCol(236, -50, -30);           // double column on the same north–south grid as car park 6, off its east aisle and a new one
+islands.push([235.8, 236.2, -48.8, -31.2, .14]); [-44, -36].forEach(z => tree(236, z, rr(.8, 1), 1));   // thin median with trees, as in the other car parks
+lotCol(247, -40, -30, true);                                  // shorter column by the diagonal ring road, facing that aisle
 lot(-200, 15, 112, 158, null, false, false);                  // 24 — west part, one grid from the hotel side to the main entrance
 lotCol(-205, 112, 158);                                       // extra column in the grass wedge by the west ring road, facing car park 24's first aisle
 lotCol(-210, 112, 158, true);   // asphalt, not grass, past the end of the row                                 // and one more facing west, onto an aisle in the wedge, kept off the verge
@@ -1124,7 +1124,8 @@ strip([-66, -110], [21, -99], 3, pave, 0.33);
 }
 // 20 McDonald's with drive-thru lane
 { const g = bgroup('mcd');
-  flat(-92, -54, 166, 190, asphalt, 0.1);
+  flat(-92, -54, 166, 190, pave, 0.1);                                           // paved forecourt round the restaurant
+  flat(-91.5, -86.5, 166.5, 190, asphalt, 0.105); flat(-86.5, -54.5, 186, 190, asphalt, 0.105);   // drive-thru lane, asphalt
   const red = M('#c8281e');
   box(g, -84, -62, 171, 185, 4.5, [red, red, M('#3d3f42'), red, red, red]);
   box(g, -84.3, -61.7, 170.7, 185.3, .8, M('#f2b705'), 4.5);
