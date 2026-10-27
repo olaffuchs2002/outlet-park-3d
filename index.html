@@ -773,7 +773,14 @@ road(-205, -191, 196, 226); road(-300, -100, 219, 226);                   // sec
 road(19, 31, 190, 226); road(-55, 105, 219, 226);                           // main entry and exit in the middle of the frontage
 road(-226, 287, 104, 112);                                                // road across the park, from the west to the east ring road
 road(19, 31, 112, 190);                                                    // internal road between the two halves of car park 24
-flat(15, 19, 112, 190, pavePink, 0.16); flat(31, 35, 112, 190, pavePink, 0.16);   // sidewalks along the whole access road
+// kerbed concrete sidewalks along the access road, broken where the service road crosses, with granite kerbs on the road side
+{ const kerb = M('#8d8f8f', { roughness: .8 });
+  [[112, 158], [165, 190]].forEach(([z1, z2]) => {
+    box(scene, 15, 18.8, z1, z2, .15, pave, .1, false); box(scene, 31.2, 35, z1, z2, .15, pave, .1, false);
+    box(scene, 18.8, 19, z1, z2, .17, kerb, .1, false); box(scene, 31, 31.2, z1, z2, .17, kerb, .1, false);
+  });
+  for (let z = 158.6; z < 164.5; z += 1.1) { flat(15.3, 18.7, z, z + .55, white, .17); flat(31.3, 34.7, z, z + .55, white, .17); }   // zebras over the service road
+}
 const NE_ROAD = [];
 { const p0 = [214, -96], p1 = [330, -170], p2 = [430, -430];
   for (let t = 0; t <= 1.0001; t += 1 / 14) NE_ROAD.push([(1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * p1[0] + t * t * p2[0], (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * p1[1] + t * t * p2[1]]);
@@ -786,7 +793,7 @@ function arrow(x, z, rot) {
   m.rotation.x = -Math.PI / 2; m.rotation.z = rot; m.position.set(x, 0.17, z); scene.add(m);
 }
 arrow(-201.5, 212, 0); arrow(-194.5, 205, Math.PI); arrow(22, 212, 0); arrow(28, 205, Math.PI);
-for (let x = 16.6; x < 33.5; x += 1.1) flat(x, x + .55, 166, 170.5, white, 0.17);   // zebra crossing
+for (let x = 19.6; x < 30.5; x += 1.1) flat(x, x + .55, 166, 170.5, white, 0.17);   // zebra crossing
 
 // ---------- S8 ----------
 flat(-3000, 3000, 225, 253, asphalt, 0.1);
