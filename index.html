@@ -744,7 +744,7 @@ for (const [z1, z2] of [[262, 560], [565, 800]]) {
 
 // ---------- surfaces inside the site ----------
 const pave = T('#d2ccc3', TX.slab), pavePink = T('#dccbbf', TX.promenade), paveGrey = T('#a39e95', TX.paving), asphalt = T('#55595d', TX.asphalt, { roughness: .95 });
-box(scene, -199, 256, -24, 104, .25, pave, 0, false);    // main pedestrian block, a 2 m sidewalk along the back of Decathlon and Kaufland
+box(scene, -199, 256, -24, 78, .25, pave, 0, false); box(scene, -196, 256, 78, 104, .25, pave, 0, false);   // main pedestrian block, a 2 m sidewalk along the back of Decathlon and Kaufland
 flat(-200, 290, 165, 190, paveGrey, 0.06);              // pad row along the road
 // pink walkways from the sketch: block perimeter, the two cross axes, north promenade
 flat(18, 32, -24, 104, pavePink, 0.33); flat(5, 47, 32, 50, pavePink, 0.36);
@@ -844,6 +844,7 @@ const hedge = (x1, x2, z, y = .25, step = 1.6) => { for (let x = x1; x < x2; x +
 
 // ---------- parking lots ----------
 const cars = []; let stalls = 0;
+const lotRects = [];                                       // car parks, so the ring road's divider can stop where their row-end islands take over
 const markMat = tex => new THREE.MeshStandardMaterial({ map: tex, transparent: true, depthWrite: false, roughness: .9 });   // painted lines only, the asphalt shows through
 const islands = [];                                       // kerbed planted noses at the ends of the parking rows
 const bollards = [];
@@ -873,7 +874,7 @@ function lot(x1, x2, z1, z2, ev = null, topAisle = true, bottomAisle = true, ly 
     c.stroke();
   });
   flat(x1, x2, z1, z2, asphalt, ly); flat(x1, x2, z1, z2, markMat(tex), ly + .005);   // same asphalt as the roads, markings on top
-  solids.push([x1, x2, z1, z2]); paved.push([x1, x2, z1, z2]);
+  solids.push([x1, x2, z1, z2]); paved.push([x1, x2, z1, z2]); lotRects.push([x1, x2, z1, z2]);
   for (const [cx, first] of cols) {
     for (const z of zs) { stalls++; if (rnd() < .74) cars.push([cx + 2.5 + rr(-.12, .12), z + 1.25, first ? Math.PI / 2 : -Math.PI / 2, ly]); }
     if (!first) continue;
@@ -907,9 +908,15 @@ function lotCol(x1, z1, z2, west = false, ly = .14) {
   });
   flat(x1, x1 + 5, z1, z2, asphalt, ly); flat(x1, x1 + 5, z1, z2, markMat(tex), ly + .005);
   zs.forEach(z => { stalls++; if (rnd() < .74) cars.push([x1 + 2.5 + rr(-.12, .12), z + 1.25, west ? Math.PI / 2 : -Math.PI / 2, ly]); });
-  solids.push([x1, x1 + 5, z1, z2]); paved.push([x1, x1 + 5, z1, z2]);
+  solids.push([x1, x1 + 5, z1, z2]); paved.push([x1, x1 + 5, z1, z2]); lotRects.push([x1, x1 + 5, z1, z2]);
 }
 lot(-255, 228, -61, -24, [-57, -47]);                        // 6 — north parking, aisles of equal width along both long sides                        // 6 — north parking, up to the north-east road
+// north-east corner: asphalt up to the diagonal ring road instead of grass, two more short columns and a link road out to the ring
+{ const P = [[228, -61], [RING10[1][0] + (RING10[2][0] - RING10[1][0]) * (79 / (RING10[2][1] - RING10[1][1])), -61], RING10[2], [262.5, -24], [228, -24]];
+  flatShape(P, asphalt, .09); pavedFns.push((x, z) => inPoly(x, z, P)); }
+road(225, 236, -61, -55);                                     // car park 6's north aisle out to the ring road
+lot(225, 247, -50, -24, null, false, false, .145);            // aisle and double column in the corner
+lotCol(247, -36, -24, true);                                  // and a short row facing the next aisle
 lot(-200, 15, 112, 158, null, false, false);                  // 24 — west part, one grid from the hotel side to the main entrance
 lotCol(-205, 112, 158);                                       // extra column in the grass wedge by the west ring road, facing car park 24's first aisle
 lotCol(-210, 112, 158, true);   // asphalt, not grass, past the end of the row                                 // and one more facing west, onto an aisle in the wedge, kept off the verge
@@ -918,16 +925,17 @@ lot(35, 286, 112, 158, [41, 51], false, false);               // 24 — east of 
 road(-212, 292, 158, 165);                                    // front service road along the whole pad row, from the ring road to the car wash
 lot(-136, -92, 165, 190, null, false, false);                 // pad row between the hotel and McDonald's
 lot(-200, -178, 165, 190, null, false, false);                // west of the hotel, same columns as car park 24 across the service road
+lotCol(-205, 165, 182);                                       // one row in the corner wedge, facing that car park's first aisle
 { const P = [[westX(165), 165], [-200, 165], [-200, 190], [westX(190), 190]]; flatShape(P, asphalt, .1); pavedFns.push((x, z) => inPoly(x, z, P)); }   // asphalt up to the ring road, no grass sliver
 lot(-40, 15, 165, 190, null, false, false);                   // pad row between McDonald's and the main entrance, same grid
-lot(-274, -142, -140, -97, null, false, false, .27);          // behind Gym & Padel, right up to the north ring road
-for (let x = -274; x < -142; x += 16) roadRects.push([x, x + 6, -141, -139]);   // its aisles open onto the ring road
-lot(-226, -204, -24, 104, null, false, false);                // strip along the west ring road, off the cross road
-lotCol(-204, -24, 104, true);                                 // last column behind Decathlon and Kaufland, facing the strip's second aisle
-lotCol(-231, -24, 72);                                        // extra column in the grass wedge by the west ring road, facing the strip's aisle
-lotCol(-260, -54, -31);                                       // short row at the west end of car park 6, facing its first aisle
-{ const zc = -24 + (-226 - westX(-24)) * 128 / (westX(104) - westX(-24)), P = [[westX(-24), -24], [-226, -24], [-226, zc]]; flatShape(P, asphalt, .09); pavedFns.push((x, z) => inPoly(x, z, P)); }   // whole west wedge paved up to the divider, no grass scraps
-lotCol(-242, -24, 36);                                        // short row along it, as far as the divider allows
+lot(-274, -142, -142.5, -97, null, false, false, .27);        // behind Gym & Padel, its row-end islands right at the north ring road
+// strip along the west ring road, on the same column grid as car park 6 above it; a wide aisle and the sidewalk along the buildings
+{ const P = [[westX(-24), -24], [-223, -24], [-223, 104], [westX(104), 104]]; flatShape(P, asphalt, .09); pavedFns.push((x, z) => inPoly(x, z, P)); }   // asphalt up to the divider
+lotCol(-244, -24, 30);                                        // outer half-column, as far as the divider allows
+lot(-239, -217, -24, 72, null, false, false);                 // aisle and double column
+lot(-223, -201, -24, 104, null, false, false, .145);          // aisle and double column, down to the cross road (a hair higher where the aisles overlap)
+road(-201, -199, -24, 78); road(-201, -196, 78, 104);         // aisle along the back of Decathlon and Kaufland, up to their sidewalk
+lotCol(-201, 80, 104, true);                                  // one row beside the Kaufland front car park, facing that aisle
 road(westX(-58) - 2, -255, -61, -55); road(westX(-28) - 2, -255, -31, -24);   // car park 6 aisles out to the west ring road
 // the remaining wedges between the ring road and the car parks are paved up to the divider, so no grass scraps are left
 { const eastX = z => RING10[2][0] + (RING10[3][0] - RING10[2][0]) * (z - RING10[2][1]) / (RING10[3][1] - RING10[2][1]);
@@ -939,7 +947,7 @@ road(westX(-58) - 2, -255, -61, -55); road(westX(-28) - 2, -255, -31, -24);   //
   lotCol(271, 52, 104, true);                                  // row along the east road, facing an aisle beside Dom i Ogród that opens onto the cross road
   box(scene, 262, 264.8, 7, 104, .15, pave, .1, false); box(scene, 264.8, 265, 7, 104, .17, M('#8d8f8f', { roughness: .8 }), .1, false); paved.push([262, 265, 7, 104]);   // thin kerbed sidewalk along its east wall
 }
-lot(-198, -112, 82, 104, null, false, false, .27);            // in front of Kaufland, off the cross road
+lot(-196, -112, 82, 104, null, false, false, .27);            // in front of Kaufland, off the cross road
 
 // ---------- buildings ----------
 // 4 Gym & Padel
@@ -1015,6 +1023,18 @@ strip([-66, -110], [21, -99], 3, pave, 0.33);
 { const g = bgroup('b16'); bldg(g, 50, 155, 34.25, 47.75, 5, { fit: FIT, cut: { cx: 25, cz: 41, r: 30 }, facade: 'wood', greenRoof: true, faces: ['n', 's'], text: 'SKLEPY · RESTAURACJE', signW: 12, signH: 1.3, signBg: '#d4882a', signFg: '#1d2822', hvac: false }); }
 { const g = bgroup('b9'); bldg(g, 32, 155, 62, 100, 11, { fit: FIT, cut: { cx: 25, cz: 41, r: 30 }, facade: 'wood', levels: 2, faces: ['n', 's'], text: 'SKLEPY', signBg: '#25322b' }); }
 // 7 Lidl, 8 Dom i Ogród
+// Lidl delivery yard on the east side: asphalt apron, yellow hatching and bay lines, an articulated lorry at the dock
+{ const yard = M('#4f5357', { roughness: .95 }), yellow = M('#f2c12e', { roughness: .7 });
+  flat(215, 255, -23, 6, asphalt, .26);
+  for (let z = -20; z <= 4; z += 8) flat(215.5, 232, z - .08, z + .08, yellow, .27);                   // dock bay lines
+  for (let x = 236; x < 254; x += 1.6) flat(x, x + .5, -22, -16, yellow, .27);                          // keep-clear hatching
+  const lorry = new THREE.Group(), white2 = M('#eef0f0', { roughness: .5 }), dark = M('#2b3036', { roughness: .6 }), blue = M('#1f4fa0', { roughness: .5 });
+  box(lorry, 0, 13.6, -1.25, 1.25, 2.9, white2, .9); box(lorry, 0, 13.6, -1.27, -1.25, .6, blue, 2.6, false); box(lorry, 0, 13.6, 1.25, 1.27, .6, blue, 2.6, false);
+  box(lorry, 14, 16.4, -1.2, 1.2, 2.7, blue, .6); box(lorry, 16.35, 16.42, -1, 1, .9, M('#1f2a33', { roughness: .1, metalness: .6 }), 2.1, false);
+  [[2, -1.1], [3.3, -1.1], [2, 1.1], [3.3, 1.1], [11.6, -1.1], [11.6, 1.1], [15.4, -1.1], [15.4, 1.1]].forEach(([x, z]) => {
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(.5, .5, .35, 14), dark); w.rotation.x = Math.PI / 2; w.position.set(x, .5, z); lorry.add(w); });
+  lorry.position.set(215.6, .26, -12); scene.add(lorry); solids.push([215, 232.5, -13.5, -10.5]);
+}
 { const g = bgroup('b7'); bldg(g, 165, 215, -18, 7, 8, { fit: FIT, faces: ['n', 'w'], text: 'LIDL', signW: 10, signBg: '#1f4fa0', signFg: '#f2d72a' }); }
 { const g = bgroup('b8');
   bldg(g, 165, 262, 7, 100, 10, { fit: FIT, wall: '#c9d3c6', faces: ['w', 's'], text: 'DOM I OGRÓD', signBg: '#5f9a48' });
@@ -1234,6 +1254,11 @@ function tag(text, x, y, z, color) {
   const steel = M('#2f353b', { metalness: .55, roughness: .35 }), glass = M('#c4dde8', { transparent: true, opacity: .28, roughness: .04, metalness: .3, depthWrite: false });
   const yellow = M('#f2c12e', { roughness: .6 });
   flat(103, 134, 185, 190, asphalt, .1);                                                     // bus bay
+  roadRects.push([96.5, 141.5, 185, 192]);
+  [[93.6, 103], [143.4, 134]].forEach(([xa, xb]) => {             // asphalt, not paving, under the curved bay entry and exit
+    const P = []; for (let i = 0; i <= 16; i++) { const t = i / 16; P.push([xa + (xb - xa) * t, 191.7 - 6.1 * (t * t * (3 - 2 * t))]); }
+    P.push([xb, 191.7]); flatShape(P, asphalt, .1);
+  });                                                   // the divider leaves the ring road here and curves into the bay (see kerbs)
   flat(104, 133, 189.6, 189.8, yellow, .12);                                                 // bay markings
   for (let x = 104; x < 133; x += 2) strip([x, 185.3], [x + 1, 189.6], .2, yellow, .12);
   const bus = textTex('BUS', '#55595d', '#f2c12e', 256, 96);
@@ -1349,7 +1374,7 @@ function infraMotion(now, wind) {
   const zones = [[-199, 256, -24, 104, 900], [-282, 128, -67, -62, 120]];
   for (const [x1, x2, z1, z2, n] of zones) for (let i = 0; i < n; i++) {
     const x = rr(x1, x2), z = rr(z1, z2);
-    if (inSolid(x, z) || Math.hypot(x - 25, z - 41) < 7.5) continue;
+    if (inSolid(x, z) || Math.hypot(x - 25, z - 41) < 7.5 || (x > 214 && z < 7)) continue;   // nobody standing in Lidl's delivery yard
     people.push([x, z]);
   }
   const im = new THREE.InstancedMesh(new THREE.CapsuleGeometry(.2, .95, 2, 8), M('#ffffff', { roughness: .9 }), people.length);
@@ -1382,7 +1407,7 @@ function infraMotion(now, wind) {
 // ---------- kerbs ----------
 // raised concrete kerbs wherever asphalt meets grass, plus the rounded kerbed islands at the parking row ends
 pavedFns.push((x, z) => inPoly(x, z, NORTH_ROW));
-paved.push([-199, 256, -24, 104], [-200, 290, 165, 190], [-92, -54, 166, 190], [35, 102, 165, 190], [15, 35, 112, 190]);
+paved.push([-199, 256, -24, 78], [-196, 256, 78, 104], [-200, 290, 165, 190], [-92, -54, 166, 190], [35, 102, 165, 190], [15, 35, 112, 190]);
 { const pavedAt = (x, z) => paved.some(([a, b, c, d]) => x >= a && x <= b && z >= c && z <= d) || pavedFns.some(f => f(x, z)) || solids.some(([a, b, c, d]) => x >= a && x <= b && z >= c && z <= d);
   const geos = [], kerbMat = M('#cfccc4', { roughness: .8 });
   // straight kerbs stop where a fillet's arc takes over
@@ -1405,7 +1430,8 @@ paved.push([-199, 256, -24, 104], [-200, 290, 165, 190], [-92, -54, 166, 190], [
     edge(a[0], a[1], b[0], b[1], -(b[1] - a[1]) / l * s, (b[0] - a[0]) / l * s); });
   ring(SITE, -1); ring(RING_IN, 1);
   // low concrete divider along the inner side of the ring road, 8 m in, open wherever a road or aisle crosses it, with rounded ends
-  { const D = insetSite(8.3), w = .6, h = .12, open = (x, z) => roadRects.some(([a, b, c, d]) => x > a - 1.2 && x < b + 1.2 && z > c - 1.2 && z < d + 1.2);
+  { const D = insetSite(8.3), w = .6, h = .12, open = (x, z) => roadRects.some(([a, b, c, d]) => x > a - 1.2 && x < b + 1.2 && z > c - 1.2 && z < d + 1.2)
+      || lotRects.some(([a, b, c, d]) => x > a && x < b && z > c - 3.5 && z < d + 3.5);   // no thin divider in front of row-end islands
     const caps = [];
     D.forEach((a, i) => {
       const b = D[(i + 1) % D.length], len = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.round(len); let start = -1;
@@ -1419,6 +1445,13 @@ paved.push([-199, 256, -24, 104], [-200, 290, 165, 190], [-92, -54, 166, 190], [
           caps.push(p, q); start = -1;
         }
       }
+    });
+    // at the bus stop the divider swings in to the platform ends and back out again, tracing the bay
+    [[93.6, 103], [143.4, 134]].forEach(([xa, xb]) => {
+      const pt = t => [xa + (xb - xa) * t, 191.7 - (191.7 - 185.6) * (t * t * (3 - 2 * t))];
+      for (let i = 0; i < 16; i++) { const [ax, az] = pt(i / 16), [bx, bz] = pt((i + 1) / 16), l = Math.hypot(bx - ax, bz - az);
+        geos.push(new THREE.BoxGeometry(l + .05, h, w).rotateY(-Math.atan2(bz - az, bx - ax)).translate((ax + bx) / 2, .1 + h / 2, (az + bz) / 2)); }
+      caps.push(pt(1));
     });
     caps.forEach(([x, z]) => geos.push(new THREE.CylinderGeometry(w / 2, w / 2, h, 14).translate(x, .1 + h / 2, z)));
   }
@@ -1453,7 +1486,8 @@ paved.push([-199, 256, -24, 104], [-200, 290, 165, 190], [-92, -54, 166, 190], [
   const promenade = (x, z) => Math.abs(x - 25) > 12 && x > -106 && x < 156 && z > 18 && z < 64;
   const zones = [[-192, 252, -18, 100], [-276, 125, -138, -72]];
   for (const [xa, xb, za, zb] of zones) for (let x = xa; x <= xb; x += 11) for (let z = za; z <= zb; z += 11) {
-    if (near(x, z, 6.5) || Math.abs(x - 25) < 16 || Math.hypot(x - 25, z - 41) < 34 || promenade(x, z)) continue;
+    if (near(x, z, 6.5) || Math.abs(x - 25) < 16 || Math.hypot(x - 25, z - 41) < 34 || promenade(x, z) || (x > 208 && z < 12)) continue;   // none on Lidl's delivery yard
+    if ([[-5, -5], [5, -5], [5, 5], [-5, 5]].some(([dx, dz]) => !inPoly(x + dx, z + dz, RING10))) continue;   // never on or over the ring road
     box(scene, x - 4.2, x + 4.2, z - 4.2, z + 4.2, .2, kerb, .25, false);
     flat(x - 3.9, x + 3.9, z - 3.9, z + 3.9, bedMat, .46);
     tree(x, z, rr(1, 1.25), 1);
