@@ -1082,8 +1082,12 @@ const PARK = [-68, 21, -140, -70];                                    // narrowe
   });
   const g = bgroup('b5');
   const fp = bldg(g, 25, 175, -140, -67, 12, { fit: FIT, cut: { cx: 1490.6, cz: -1615, r: 2000, corner: .3 },   // corner at the square's axis; NE corner cut parallel to the access road
-    wall: '#3a5a92', faces: ['s', 'w'], portalAt: .08, text: 'FLY PARK · RESTAURACJA', signW: 30, signBg: '#3b7bd6', hvac: false });
+    wall: '#3a5a92', faces: ['s', 'w'], portalAt: .32, text: 'FLY PARK · RESTAURACJA', signW: 30, signBg: '#3b7bd6', hvac: false });
   box(g, fp.x1 - .3, fp.x1, fp.z1 + 1, fp.z2 - 1, 9.4, winMat, 0, false);   // fully glazed west side, facing the path from the square
+  // full-height glass corner towards the square: glazing wraps both faces, dark crown on top
+  box(g, fp.x1 - .5, fp.x1 + 18, fp.z2 - 18, fp.z2 + .5, 12.4, winMat, 0, false);
+  box(g, fp.x1 - 1, fp.x1 + 18.5, fp.z2 - 18.5, fp.z2 + 1, .7, M('#1d262d', { metalness: .5, roughness: .35 }), 12.4);
+  for (let d = 0; d <= 18; d += 3) { box(g, fp.x1 + d - .08, fp.x1 + d + .08, fp.z2 + .5, fp.z2 + .7, 12.4, M('#1d262d'), 0, false); box(g, fp.x1 - .7, fp.x1 - .5, fp.z2 - d - .08, fp.z2 - d + .08, 12.4, M('#1d262d'), 0, false); }   // slim mullions
   const umb = M('#f1ebdd'), pole = M('#5b5f62');
   for (let x = fp.x1 + 26; x < fp.x1 + 52; x += 5) { const u = new THREE.Mesh(new THREE.ConeGeometry(1.6, .7, 8), umb); u.position.set(x, 2.5, fp.z2 + 4.7); u.castShadow = true; g.add(u); box(g, x - .06, x + .06, fp.z2 + 4.64, fp.z2 + 4.76, 2.2, pole, 0, false); }
 }
