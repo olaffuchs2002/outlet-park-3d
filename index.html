@@ -629,10 +629,13 @@ function roundRect(x1, x2, z1, z2, r, side) {
   s.closePath(); return s;
 }
 // rectangle with rounded corners (radius rc), as points in world (x, z)
+// rc: one radius for all corners, or [ne, se, sw, nw]
 function roundedRectPts(x1, x2, z1, z2, rc) {
-  const pts = [], seg = 6;
-  for (const [cx, cz, a0] of [[x2 - rc, z1 + rc, -Math.PI / 2], [x2 - rc, z2 - rc, 0], [x1 + rc, z2 - rc, Math.PI / 2], [x1 + rc, z1 + rc, Math.PI]])
-    for (let i = 0; i <= seg; i++) { const a = a0 + i / seg * Math.PI / 2; pts.push([cx + Math.cos(a) * rc, cz + Math.sin(a) * rc]); }
+  const pts = [], R = Array.isArray(rc) ? rc : [rc, rc, rc, rc];
+  [[x2 - R[0], z1 + R[0], -Math.PI / 2, R[0]], [x2 - R[1], z2 - R[1], 0, R[1]], [x1 + R[2], z2 - R[2], Math.PI / 2, R[2]], [x1 + R[3], z1 + R[3], Math.PI, R[3]]].forEach(([cx, cz, a0, r]) => {
+    const seg = r > 5 ? 28 : 6;
+    for (let i = 0; i <= seg; i++) { const a = a0 + i / seg * Math.PI / 2; pts.push([cx + Math.cos(a) * r, cz + Math.sin(a) * r]); }
+  });
   return pts;
 }
 // polygon minus a circle: the part inside the circle is replaced by a concave arc
@@ -670,7 +673,8 @@ function bldg(g, x1, x2, z1, z2, h, o = {}) {
   const ab = Math.min(2.2, h * .2), rs = o.round?.side, rr0 = o.round ? Math.min(o.round.r, (z2 - z1) / 2) : 0;
   if (o.cut) {                                           // softly rounded corners, and the side towards the square cut along its circle
     const { cx, cz, r } = o.cut, rc = o.cut.corner ?? 4;
-    const outline = (e, rad) => shapeOf(minusCircle(roundedRectPts(x1 - e, x2 + e, z1 - e, z2 + e, Math.max(.3, rc + e)), cx, cz, rad));
+    const R = [rc, rc, o.cut.sw ?? rc, rc];                // o.cut.sw: a large rounded south-west corner
+    const outline = (e, rad) => shapeOf(minusCircle(roundedRectPts(x1 - e, x2 + e, z1 - e, z2 + e, R.map(v => Math.max(.3, v + e))), cx, cz, rad));
     const body = new THREE.Mesh(extrudeUp(outline(0, r), h), [rm, wm]); body.castShadow = body.receiveShadow = true; g.add(body);
     const ring = outline(.25, r - .25); ring.holes.push(outline(-.5, r + .5));
     const attic = new THREE.Mesh(extrudeUp(ring, ab + .6), cap); attic.position.y = h - ab; g.add(attic);
@@ -686,25 +690,25 @@ function bldg(g, x1, x2, z1, z2, h, o = {}) {
   const levels = o.levels || 1, lh = h / levels, gh = Math.min(lh * .6, 4.5);
   const wood = M('#a86f3d'), canopy = M('#2f353b', { metalness: .5, roughness: .4 });
   for (const f of (o.faces || ['s'])) {
-    const ns = f === 's' || f === 'n';
+    const ns = f === 's' || f === 'n', fz2 = f === 'w' && o.cut?.sw ? z2 - o.cut.sw : z2;   // west face stops where the rounded corner begins
     let fx1 = ns && rs === 'w' ? x1 + rr0 : x1, fx2 = ns && rs === 'e' ? x2 - rr0 : x2;
     if (o.cut && ns) {                                   // facade stops at the rounded corners and where the square's arc begins
       const rc = o.cut.corner ?? 4, dz = (f === 'n' ? z1 : z2) - o.cut.cz;
-      fx1 = Math.max(fx1, x1 + rc); fx2 = Math.min(fx2, x2 - rc);
+      fx1 = Math.max(fx1, x1 + (f === 's' && o.cut.sw ? o.cut.sw : rc)); fx2 = Math.min(fx2, x2 - rc);
       if (Math.abs(dz) < o.cut.r) { const w = Math.sqrt(o.cut.r ** 2 - dz * dz); if ((x1 + x2) / 2 < o.cut.cx) fx2 = Math.min(fx2, o.cut.cx - w - 1); else fx1 = Math.max(fx1, o.cut.cx + w + 1); }
     }
-    const len = ns ? fx2 - fx1 : z2 - z1;
+    const len = ns ? fx2 - fx1 : fz2 - z1;
     for (let i = 0; i < levels; i++) {
-      edge(g, f, fx1, fx2, z1, z2, 1.2, 0, .2, i * lh + .25, gh, winMat);
-      if (i > 0) edge(g, f, fx1, fx2, z1, z2, 0, 0, .3, i * lh - .3, .6, cap);
+      edge(g, f, fx1, fx2, z1, fz2, 1.2, 0, .2, i * lh + .25, gh, winMat);
+      if (i > 0) edge(g, f, fx1, fx2, z1, fz2, 0, 0, .3, i * lh - .3, .6, cap);
     }
-    if (o.canopy !== false) edge(g, f, fx1, fx2, z1, z2, 0, 0, 3, gh + .25, .3, canopy, true);
+    if (o.canopy !== false) edge(g, f, fx1, fx2, z1, fz2, 0, 0, 3, gh + .25, .3, canopy, true);
     if (len > 30 && levels < 3) {                           // glazed entrance portal (centre of the facade unless o.portalAt says otherwise)
       const pc = (f === (o.faces || ['s'])[0] ? (o.portalAt ?? .5) : .5) * len, frame = M('#2f353b', { metalness: .5, roughness: .4 });
-      portal(g, f, fx1, fx2, z1, z2, pc - 5, pc + 5, 3.4, 0, gh + 2, winMat);
-      portal(g, f, fx1, fx2, z1, z2, pc - 5.3, pc + 5.3, 3.7, gh + 2, .6, frame);
+      portal(g, f, fx1, fx2, z1, fz2, pc - 5, pc + 5, 3.4, 0, gh + 2, winMat);
+      portal(g, f, fx1, fx2, z1, fz2, pc - 5.3, pc + 5.3, 3.7, gh + 2, .6, frame);
     }
-    if (levels === 1) edge(g, f, fx1, fx2, z1, z2, 0, 0, .35, gh + .6, Math.max(.4, Math.min(1.6, h - gh - 1.4)), wood);
+    if (levels === 1) edge(g, f, fx1, fx2, z1, fz2, 0, 0, .35, gh + .6, Math.max(.4, Math.min(1.6, h - gh - 1.4)), wood);
     if (f === (o.faces || ['s'])[0] && len > 25 && levels < 3 && o.corners !== false && !o.round && !o.cut) {      // full-height glazed corners on the main facade
       const cw = Math.min(7, len * .1), ch = h - ab - .2;
       if (f === 's' || f === 'n') {
@@ -717,7 +721,7 @@ function bldg(g, x1, x2, z1, z2, h, o = {}) {
         box(g, xs[0], xs[1], z1 - .3, z1, ch, winMat, 0, false); box(g, xs[0], xs[1], z2, z2 + .3, ch, winMat, 0, false);
       }
     }
-    if (o.text) { const sh = o.signH || 2.6; faceSign(g, f, o.text, fx1, fx2, z1, z2, h - sh / 2 - .5, Math.min(o.signW || 24, len * .5), sh, o.signBg, o.signFg); }
+    if (o.text) { const sh = o.signH || 2.6; faceSign(g, f, o.text, fx1, fx2, z1, fz2, h - sh / 2 - .5, Math.min(o.signW || 24, len * .5), sh, o.signBg, o.signFg); }
   }
   if (o.skylights !== false && !o.roofMap && (x2 - x1) * (z2 - z1) > 1500)          // rooflight grid on large flat roofs
     for (let x = x1 + 7; x < x2 - 6; x += 10) for (let z = z1 + 7; z < z2 - 6; z += 9) if (!o.cut || Math.hypot(x - o.cut.cx, z - o.cut.cz) > o.cut.r + 4) skylights.push([x, z, h]);
@@ -906,6 +910,7 @@ const hedge = (x1, x2, z, y = .25, step = 1.6) => { for (let x = x1; x < x2; x +
 
 // ---------- parking lots ----------
 const cars = []; let stalls = 0;
+const lampMedians = [];                                    // centre lines of double columns, where the car park lamps stand
 const lotRects = [];                                       // car parks, so the ring road's divider can stop where their row-end islands take over
 const markMat = tex => new THREE.MeshStandardMaterial({ map: tex, transparent: true, depthWrite: false, roughness: .9 });   // painted lines only, the asphalt shows through
 const islands = [];
@@ -945,6 +950,7 @@ function lot(x1, x2, z1, z2, ev = null, topAisle = true, bottomAisle = true, ly 
     for (const z of zs) { stalls++; if (rnd() < .74) cars.push([cx + 2.5 + rr(-.12, .12), z + 1.25, first ? Math.PI / 2 : -Math.PI / 2, ly]); }
     if (!first) continue;
     if (isEV(cx)) { zs.forEach(z => evSpots.push([cx + 5, z + 1.25, ly])); evTags.push([cx + 5, (za + zb) / 2]); continue; }
+    lampMedians.push([cx + 5, za, zb]);
     islands.push([cx + 4.8, cx + 5.2, za - .3, zb + .3, ly]);   // raised concrete median between the two columns, joining the end islands
     for (let i = 3; i < zs.length; i += 6) tree(cx + 5, zs[i], rr(.8, 1), 1);
   }
@@ -1038,7 +1044,7 @@ lot(-196, -112, 82, 104, null, false, false);            // in front of Kaufland
       c.beginPath(); c.moveTo(x + 80, y + 4); c.lineTo(x + 80, y + 76); c.moveTo(x + 30, y + 40); c.lineTo(x + 130, y + 40); c.stroke();
     }
   });
-  bldg(g, -250, -140, -95, -67, 13, { fit: FIT, levels: 2, wall: '#3d434d', faces: ['s'], text: 'GYM & PADEL', signBg: '#8c5ec8', hvac: false });
+  bldg(g, -250, -140, -95, -67, 13, { fit: FIT, levels: 2, facade: 'wood', faces: ['s'], text: 'GYM & PADEL', signBg: '#8c5ec8', hvac: false });
 }
 // 18 children's playground (about 1 500 m²), in the middle of one park between Gym & Padel and Fly Park, reached by paved alleys
 const PARK = [-68, 21, -140, -70];                                    // narrower, towards Fly Park; the car park west of it took the rest
@@ -1081,13 +1087,18 @@ const PARK = [-68, 21, -140, -70];                                    // narrowe
     c.fillStyle = '#a6abae'; c.fillRect(w * .78, 0, w * .22, h);       // restaurant roof
   });
   const g = bgroup('b5');
-  const fp = bldg(g, 25, 175, -140, -67, 12, { fit: FIT, cut: { cx: 1490.6, cz: -1615, r: 2000, corner: .3 },   // corner at the square's axis; NE corner cut parallel to the access road
-    wall: '#3a5a92', faces: ['s', 'w'], portalAt: .32, text: 'FLY PARK · RESTAURACJA', signW: 30, signBg: '#3b7bd6', hvac: false });
-  box(g, fp.x1 - .3, fp.x1, fp.z1 + 1, fp.z2 - 1, 9.4, winMat, 0, false);   // fully glazed west side, facing the path from the square
-  // full-height glass corner towards the square: glazing wraps both faces, dark crown on top
-  box(g, fp.x1 - .5, fp.x1 + 18, fp.z2 - 18, fp.z2 + .5, 12.4, winMat, 0, false);
-  box(g, fp.x1 - 1, fp.x1 + 18.5, fp.z2 - 18.5, fp.z2 + 1, .7, M('#1d262d', { metalness: .5, roughness: .35 }), 12.4);
-  for (let d = 0; d <= 18; d += 3) { box(g, fp.x1 + d - .08, fp.x1 + d + .08, fp.z2 + .5, fp.z2 + .7, 12.4, M('#1d262d'), 0, false); box(g, fp.x1 - .7, fp.x1 - .5, fp.z2 - d - .08, fp.z2 - d + .08, 12.4, M('#1d262d'), 0, false); }   // slim mullions
+  const fp = bldg(g, 25, 175, -140, -67, 14.5, { fit: FIT, cut: { cx: 1490.6, cz: -1615, r: 2000, corner: .3, sw: 18 },   // corner at the square's axis; NE corner cut parallel to the access road
+    facade: 'wood', faces: ['s', 'w'], portalAt: .32, canopy: false, text: 'FLY PARK · RESTAURACJA', signW: 30, signBg: '#3b7bd6', hvac: false });
+  // the rounded corner towards the square is glazed full height: glass skin and mullions on the arc, floor lines, all under the one roof
+  { const R = 18, cx = fp.x1 + R, cz = fp.z2 - R, H = 14.5 - 2.4, dark = M('#2c3136', { metalness: .6, roughness: .35 });
+    const arc = (r) => { const p = []; for (let i = 0; i <= 40; i++) { const a = Math.PI / 2 + i / 40 * Math.PI / 2; p.push([cx + r * Math.cos(a), cz + r * Math.sin(a)]); } return p; };
+    const skin = (r0, r1, y0, hh, mat) => { const o = arc(r1), n = arc(r0).reverse(), sh = new THREE.Shape([...o, ...n].map(([x, z]) => new THREE.Vector2(x, -z)));
+      const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: hh, bevelEnabled: false }), mat); m.rotation.x = -Math.PI / 2; m.position.y = y0; m.castShadow = true; g.add(m); };
+    skin(R - .1, R + .15, .05, H, winMat);
+    for (let y = 4.1; y < H; y += 4.1) skin(R + .1, R + .3, y, .16, dark);                // floor lines
+    for (let i = 0; i <= 12; i++) { const a = Math.PI / 2 + i / 12 * Math.PI / 2; const x = cx + (R + .2) * Math.cos(a), z = cz + (R + .2) * Math.sin(a); box(g, x - .09, x + .09, z - .09, z + .09, H, dark, .05, false); }
+  }
+
   const umb = M('#f1ebdd'), pole = M('#5b5f62');
   for (let x = fp.x1 + 26; x < fp.x1 + 52; x += 5) { const u = new THREE.Mesh(new THREE.ConeGeometry(1.6, .7, 8), umb); u.position.set(x, 2.5, fp.z2 + 4.7); u.castShadow = true; g.add(u); box(g, x - .06, x + .06, fp.z2 + 4.64, fp.z2 + 4.76, 2.2, pole, 0, false); }
 }
@@ -1108,7 +1119,7 @@ const PARK = [-68, 21, -140, -70];                                    // narrowe
     for (let d = -28; d <= 28; d += 8) { const [x, z] = toWorld(-16, lz + d); tree(x, z, rr(.95, 1.15), 1); }   // trees along the back only, the front stays open to the park
     if (lz > -93) for (let lx = -8; lx <= 8; lx += 8) for (const d of [-41, -52]) { const [x, z] = toWorld(lx, lz + d); tree(x, z, rr(.95, 1.2), 1); }   // trees in the gaps between the buildings
     const n0 = solids.length;
-    const ob = bldg(g, -10, 10, lz - 30, lz + 30, 11.5, { fit: FIT, facade: 'glass', levels: 3, noAO: true, faces: ['n', 's', 'e', 'w'], canopy: false });
+    const ob = bldg(g, -10, 10, lz - 30, lz + 30, 11.5, { fit: FIT, facade: 'wood', levels: 3, noAO: true, faces: ['n', 's', 'e', 'w'], canopy: false });
     solids.length = n0;                                                        // bldg records local coordinates; record the turned footprint instead
     const cx = -285 + lz * Math.sin(th), cz = 10 + lz * Math.cos(th), hx = 10 * Math.cos(th) + 30 * Math.sin(th), hz = 10 * Math.sin(th) + 30 * Math.cos(th);
     solids.push([cx - hx - 1.5, cx + hx + 1.5, cz - hz - 1.5, cz + hz + 1.5]);
@@ -1116,8 +1127,8 @@ const PARK = [-68, 21, -140, -70];                                    // narrowe
   });
 }
 // 12 Decathlon, 11 Kaufland
-{ const g = bgroup('b12'); bldg(g, -197, -113, -18, 30, 9.5, { fit: FIT, faces: ['n', 'e'], text: 'DECATHLON', signBg: '#1f8fb0' }); }
-{ const g = bgroup('b11'); bldg(g, -197, -113, 30, 78, 9.5, { fit: FIT, faces: ['s', 'e'], text: 'KAUFLAND', signBg: '#cc4639' }); }
+{ const g = bgroup('b12'); bldg(g, -197, -113, -18, 30, 9.5, { fit: FIT, facade: 'wood', faces: ['n', 'e'], text: 'DECATHLON', signBg: '#1f8fb0' }); }
+{ const g = bgroup('b11'); bldg(g, -197, -113, 30, 78, 9.5, { fit: FIT, facade: 'wood', faces: ['s', 'e'], text: 'KAUFLAND', signBg: '#cc4639' }); }
 // 13 + 15, 10 — west of the square
 { const g = bgroup('b13'); bldg(g, -105, 18, -18, 20, 11, { fit: FIT, cut: { cx: 25, cz: 41, r: 30 }, facade: 'wood', levels: 2, faces: ['n', 's'], text: 'SKLEPY', signBg: '#25322b' }); }
 { const g = bgroup('b15'); bldg(g, -105, 0, 34.25, 47.75, 5, { fit: FIT, cut: { cx: 25, cz: 41, r: 30 }, facade: 'wood', greenRoof: true, faces: ['n', 's'], text: 'SKLEPY · RESTAURACJE', signW: 12, signH: 1.3, signBg: '#e3a32b', signFg: '#1d2822', hvac: false }); }
@@ -1152,9 +1163,9 @@ const PARK = [-68, 21, -140, -70];                                    // narrowe
     const w = new THREE.Mesh(new THREE.CylinderGeometry(.5, .5, .35, 14), dark); w.rotation.x = Math.PI / 2; w.position.set(x, .5, z); lorry.add(w); });
   lorry.position.set(215.6, .26, -12); scene.add(lorry); solids.push([215, 232.5, -13.5, -10.5]);
 }
-{ const g = bgroup('b7'); bldg(g, 165, 215, -18, 7, 8, { fit: FIT, faces: ['n', 'w'], text: 'LIDL', signW: 10, signBg: '#1f4fa0', signFg: '#f2d72a' }); }
+{ const g = bgroup('b7'); bldg(g, 165, 215, -18, 7, 8, { fit: FIT, facade: 'wood', faces: ['n', 'w'], text: 'LIDL', signW: 10, signBg: '#1f4fa0', signFg: '#f2d72a' }); }
 { const g = bgroup('b8');
-  bldg(g, 165, 262, 7, 100, 10, { fit: FIT, wall: '#c9d3c6', faces: ['w', 's'], text: 'DOM I OGRÓD', signBg: '#5f9a48' });
+  bldg(g, 165, 262, 7, 100, 10, { fit: FIT, facade: 'wood', faces: ['w', 's'], text: 'DOM I OGRÓD', signBg: '#5f9a48' });
 }
 // 17 Rynek
 { const g = bgroup('rynek');
@@ -1193,7 +1204,7 @@ const PARK = [-68, 21, -140, -70];                                    // narrowe
     const [a, b] = [canvasTex(pw, ph, draw(false)), canvasTex(pw, ph, draw(true))];
     return glow(M('#ffffff', { map: a, emissiveMap: b, emissive: '#ffffff', emissiveIntensity: 0, roughness: .12, metalness: .55 }), 0, 1);
   }
-  const longF = facade(20), shortF = facade(9), white = M('#f1f2f0', { roughness: .5 }), dark = M('#262b30', { metalness: .5, roughness: .35 });
+  const longF = facade(20), shortF = facade(9), white = M('#3a4048', { metalness: .45, roughness: .45 }), dark = M('#2c3136', { metalness: .6, roughness: .35 });   // graphite fins, crown and podium edge, anthracite details
   // podium: double-height lobby, restaurant and conference, fully glazed
   box(g, -179, -141, 168, 188, podH, winMat);
   box(g, -180, -140, 167, 189, .7, white, podH);
@@ -1320,7 +1331,7 @@ const PARK = [-68, 21, -140, -70];                                    // narrowe
     if (rnd() < .8) cars.push([cx + rr(-.2, .2), (z1 + z2) / 2 + rr(-.6, .6), rnd() < .5 ? 0 : Math.PI]);
   }
   ['n', 's'].forEach(f => faceSign(g, f, 'MYJNIA SAMOOBSŁUGOWA', x1, x2, z1 - .2, z2 + .2, H + .9, 18, .75, '#3aa6c4', '#ffffff'));
-  bldg(g, 267.4, 290.4, 168, 187, 6.5, { faces: [], hvac: false });
+  bldg(g, 267.4, 290.4, 168, 187, 6.5, { facade: 'wood', faces: [], hvac: false });
   const door = M('#2b3035', { metalness: .3, roughness: .5 });
   box(g, 272.4, 285.4, 167.8, 168, 4.6, door, 0, false); box(g, 272.4, 285.4, 187, 187.2, 4.6, door, 0, false);
   faceSign(g, 's', 'MYJNIA AUTOMATYCZNA', 267.4, 290.4, 168, 187, 5.6, 12, .8, '#3aa6c4', '#ffffff');
@@ -1690,22 +1701,30 @@ const CAR_COLS = ['#f2f2ef', '#f2f2ef', '#c4c7ca', '#9ea3a8', '#2a2d31', '#1c1e2
 }
 
 // ---------- street lamps ----------
-{ const pts = [];
-  SITE.forEach((a, i) => {
-    const b = SITE[(i + 1) % SITE.length], s = inward(a, b), len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    const nx = -(b[1] - a[1]) / len * s, nz = (b[0] - a[0]) / len * s;
-    for (let d = 15; d < len - 10; d += 35) { const x = a[0] + (b[0] - a[0]) * d / len + nx * 14.5, z = a[1] + (b[1] - a[1]) * d / len + nz * 14.5;
-      if (!(x > -252 && x < -224 && z > -26 && z < 74) && !(x > -225 && x < -199 && z > 110 && z < 160) && !(x > -63 && x < -44 && z > 165 && z < 191) && !lotRects.some(([a, b, c, d]) => x > a - 1 && x < b + 1 && z > c - 1 && z < d + 1)) pts.push([x, z]); }   // and none standing in a car park   // nor in McDonald's garden   // none on the stall columns in the west wedges
+// one consistent scheme: [x, z, arm angle, two-armed] — on the ring road's divider facing the carriageway, on every car park median,
+// along the entrance sidewalks and the edges of the pedestrian block; never on a stall, an aisle or a building
+{ const pts = [], clear = (x, z, m = 1.5) => !lotRects.some(([a, b, c, d]) => x > a - m && x < b + m && z > c - m && z < d + m) && !solids.some(([a, b, c, d]) => x > a && x < b && z > c && z < d);
+  const D = insetSite(8.3);
+  D.forEach((a, i) => {
+    const b = D[(i + 1) % D.length], len = Math.hypot(b[0] - a[0], b[1] - a[1]), ux = (b[0] - a[0]) / len, uz = (b[1] - a[1]) / len;
+    const s = inward(SITE[i], SITE[(i + 1) % SITE.length]), nx = -uz * s, nz = ux * s;            // n points into the site; the arm reaches the other way, over the road
+    for (let d = 18; d < len - 12; d += 36) { const x = a[0] + ux * d, z = a[1] + uz * d;
+      if (roadRects.some(([p, q, r, t]) => x > p - 4 && x < q + 4 && z > r - 4 && z < t + 4)) continue;
+      pts.push([x, z, Math.atan2(nz, -nx), false]); }
   });
-  for (let x = -250; x < 210; x += 30) { pts.push([x, -61.6]); pts.push([x, -25.4]); }
-  for (let x = -195; x < 280; x += 30) if (Math.abs(x) > 12) { pts.push([x, 104.3]); if (x > -184 && x !== -45) pts.push([x, 165.5]); }
-  const poleMat = M('#4f5458', { metalness: .5, roughness: .45 });
+  lampMedians.forEach(([x, z1, z2]) => { for (let z = z1 + 12; z < z2 - 8; z += 30) pts.push([x, z, 0, true]); });
+  for (let z = 120; z < 188; z += 24) { pts.push([16.2, z, 0, false]); pts.push([33.8, z, Math.PI, false]); }   // entrance sidewalks, arms over the road
+  for (let x = -185; x < 250; x += 32) if (x < 8 || x > 42) { if (clear(x, 103.4)) pts.push([x, 103.4, -Math.PI / 2, false]); }   // block edge along the cross road
+  const poleMat = M('#4f5458', { metalness: .5, roughness: .45 }), arms = pts.reduce((n, p) => n + (p[3] ? 2 : 1), 0);
   const poles = new THREE.InstancedMesh(new THREE.CylinderGeometry(.09, .14, 8, 8), poleMat, pts.length);
-  const arms = new THREE.InstancedMesh(new THREE.BoxGeometry(1.6, .1, .1).translate(.75, -.05, 0), poleMat, pts.length);
-  const heads = new THREE.InstancedMesh(new THREE.BoxGeometry(.9, .14, .38).translate(1.35, -.14, 0), lampMat, pts.length);
-  const o = new THREE.Object3D();
-  pts.forEach(([x, z], i) => { o.position.set(x, 4, z); o.updateMatrix(); poles.setMatrixAt(i, o.matrix); o.position.set(x, 8, z); o.updateMatrix(); heads.setMatrixAt(i, o.matrix); arms.setMatrixAt(i, o.matrix); });
-  scene.add(poles, arms, heads);
+  const armM = new THREE.InstancedMesh(new THREE.BoxGeometry(1.6, .1, .1).translate(.75, -.05, 0), poleMat, arms);
+  const heads = new THREE.InstancedMesh(new THREE.BoxGeometry(.9, .14, .38).translate(1.35, -.14, 0), lampMat, arms);
+  const o = new THREE.Object3D(); let k = 0;
+  pts.forEach(([x, z, rot, two], i) => {
+    o.rotation.set(0, 0, 0); o.position.set(x, 4, z); o.updateMatrix(); poles.setMatrixAt(i, o.matrix);
+    for (const r of two ? [rot, rot + Math.PI] : [rot]) { o.position.set(x, 8, z); o.rotation.set(0, -r, 0); o.updateMatrix(); heads.setMatrixAt(k, o.matrix); armM.setMatrixAt(k, o.matrix); k++; }
+  });
+  scene.add(poles, armM, heads);
 }
 
 // ---------- S8 traffic (instanced, moved every frame) ----------
