@@ -888,7 +888,7 @@ function lot(x1, x2, z1, z2, ev = null, topAisle = true, bottomAisle = true, ly 
   }
 }
 // single row of 5 m stalls entered straight from a road or an aisle, along x
-function lotRow(x1, x2, z1, ly = .27, rot = null) {
+function lotRow(x1, x2, z1, ly = .27, rot = null, ends = true) {
   const S = 6, cw = Math.round((x2 - x1) * S), ch = 5 * S, xs = [];
   for (let x = x1; x + 2.5 <= x2 + .01; x += 2.5) xs.push(x);
   const tex = canvasTex(cw, ch, (c) => {
@@ -899,7 +899,7 @@ function lotRow(x1, x2, z1, ly = .27, rot = null) {
   flat(x1, x2, z1, z1 + 5, asphalt, ly); flat(x1, x2, z1, z1 + 5, markMat(tex), ly + .005);
   xs.forEach(x => { stalls++; if (rnd() < .74) cars.push([x + 1.25, z1 + 2.5, rot ?? (rnd() < .5 ? 0 : Math.PI), ly]); });
   solids.push([x1, x2, z1, z1 + 5]); paved.push([x1, x2, z1, z1 + 5]); lotRects.push([x1, x2, z1, z1 + 5]);
-  islands.push([x1 - 1.3, x1 - .15, z1 + .15, z1 + 4.85, ly], [x2 + .15, x2 + 1.3, z1 + .15, z1 + 4.85, ly]);
+  if (ends) islands.push([x1 - 1.3, x1 - .15, z1 + .15, z1 + 4.85, ly], [x2 + .15, x2 + 1.3, z1 + .15, z1 + 4.85, ly]);
 }
 // single column of 5 m stalls along z, entered from the aisle on its east side (west = true: on its west side)
 function lotCol(x1, z1, z2, west = false, ly = .14) {
@@ -921,7 +921,9 @@ lot(-255, 231, -61, -24, [-57, -47]);                        // 6 — north park
   flatShape(P, asphalt, .09); pavedFns.push((x, z) => inPoly(x, z, P)); }
 road(225, 236, -61, -55);                                     // car park 6's north aisle out to the ring road
 road(231, 263, -30, -24);                                     // link road along Lidl's delivery yard, from car park 6 out to the east ring road
-lotRow(232.5, 255, -35, .14, 0); lotRow(232.5, 250, -40, .14, Math.PI);   // two rows back to back: one off the link road, one off the aisle above
+lotRow(232.5, 252.5, -35, .14, 0, false); lotRow(232.5, 252.5, -40, .14, Math.PI, false);   // two rows back to back: one off the link road, one off the aisle above
+islands.push([231.2, 232.35, -39.85, -30.15, .14], [252.65, 253.8, -39.85, -30.15, .14], [232.5, 252.5, -35.2, -34.8, .14]);   // shared end islands and a thin median, as in the other car parks
+[236.25, 243.75, 251.25].forEach(x => tree(x - 2.5, -35, rr(.8, 1), 1));
 lot(-200, 15, 112, 158, null, false, false);                  // 24 — west part, one grid from the hotel side to the main entrance
 lotCol(-205, 112, 158);                                       // extra column in the grass wedge by the west ring road, facing car park 24's first aisle
 lotCol(-210, 112, 158, true);   // asphalt, not grass, past the end of the row                                 // and one more facing west, onto an aisle in the wedge, kept off the verge
@@ -1005,11 +1007,20 @@ strip([-66, -110], [21, -99], 3, pave, 0.33);
 // the group is turned to run parallel to the west boundary: local z along the road, local +x towards the site, 2B at the pivot
 { const g = bgroup('bB'), th = Math.atan2(90, 350);
   g.position.set(-285, 0, 10); g.rotation.y = th;
+  const toWorld = (lx, lz) => [-285 + lx * Math.cos(th) + lz * Math.sin(th), 10 - lx * Math.sin(th) + lz * Math.cos(th)];
+  const planterMat = M('#3a4046', { metalness: .4, roughness: .5 }), seat = M('#b5895c', { roughness: .8 });
   [['1B', 93], ['2B', 0], ['3B', -93]].forEach(([n, lz]) => {
-    flat(-15, 15, lz - 35, lz + 35, paveGrey, 0.06, g);
-    flat(10, 25.5, lz - 1.5, lz + 1.5, paveGrey, 0.07, g);                    // footpath to the ring road
+    flat(-12.5, 12.5, lz - 32.5, lz + 32.5, pave, 0.06, g);                   // paved apron round the building
+    flat(12.5, 21, lz - 9, lz + 9, pave, 0.065, g);                           // entrance plaza facing the park
+    flat(21, 25.5, lz - 2, lz + 2, pave, 0.065, g);                           // path on to the ring road
+    [-6, 6].forEach(dz => {                                                    // planters with trees and benches either side of the entrance
+      box(g, 14.5, 18.5, lz + dz - 2, lz + dz + 2, .5, planterMat, 0, false);
+      box(g, 19.2, 19.7, lz + dz - 1.5, lz + dz + 1.5, .45, seat, 0, false);
+      const [x, z] = toWorld(16.5, lz + dz); tree(x, z, .9, 1);
+    });
+    for (let d = -28; d <= 28; d += 8) [-16, 16].forEach(lx => { if (lx > 0 && Math.abs(d) < 12) return; const [x, z] = toWorld(lx, lz + d); tree(x, z, rr(.95, 1.15), 1); });   // tree avenues along both long sides
     const n0 = solids.length;
-    const ob = bldg(g, -10, 10, lz - 30, lz + 30, 11.5, { fit: FIT, facade: 'glass', levels: 3, greenRoof: true, noAO: true, faces: ['n', 's', 'e', 'w'], canopy: false, hvac: false });
+    const ob = bldg(g, -10, 10, lz - 30, lz + 30, 11.5, { fit: FIT, facade: 'glass', levels: 3, noAO: true, faces: ['n', 's', 'e', 'w'], canopy: false });
     solids.length = n0;                                                        // bldg records local coordinates; record the turned footprint instead
     const cx = -285 + lz * Math.sin(th), cz = 10 + lz * Math.cos(th), hx = 10 * Math.cos(th) + 30 * Math.sin(th), hz = 10 * Math.sin(th) + 30 * Math.cos(th);
     solids.push([cx - hx - 1.5, cx + hx + 1.5, cz - hz - 1.5, cz + hz + 1.5]);
@@ -1030,10 +1041,20 @@ strip([-66, -110], [21, -99], 3, pave, 0.33);
 // 7 Lidl, 8 Dom i Ogród
 // Lidl delivery yard on the east side: asphalt apron, yellow hatching and bay lines, an articulated lorry at the dock
 { const yard = M('#4f5357', { roughness: .95 }), yellow = M('#f2c12e', { roughness: .7 });
-  flat(215, 255, -23, 6, asphalt, .26);
-  box(scene, 233, 255, -24.2, -23, .26, asphalt, 0, false);                                        // wide drive-in from the link road onto the yard
-  roadRects.push([233, 255, -26, -22]);
-  for (let z = -20; z <= 4; z += 8) flat(215.5, 232, z - .08, z + .08, yellow, .27);                   // dock bay lines
+  box(scene, 215, 262, -23, 7, .26, asphalt, 0, false); paved.push([215, 262, -23, 7]);           // yard runs out to the line of Dom i Ogród's east wall
+  box(scene, 238, 252, -24.4, -23, .26, asphalt, 0, false); roadRects.push([238, 252, -26, -22]);  // drive-in from the link road
+  // mesh fence on posts along the road side and the east side, open only at the gate
+  const post = M('#5b6166', { metalness: .5, roughness: .4 }), mesh = M('#9aa3a8', { transparent: true, opacity: .32, roughness: .6, side: THREE.DoubleSide, depthWrite: false });
+  const fence = (ax, az, bx, bz) => { const len = Math.hypot(bx - ax, bz - az), n = Math.max(1, Math.round(len / 2.5));
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(len, 1.9), mesh); p.position.set((ax + bx) / 2, .26 + .95, (az + bz) / 2); p.rotation.y = -Math.atan2(bz - az, bx - ax); scene.add(p);
+    for (let i = 0; i <= n; i++) { const x = ax + (bx - ax) * i / n, z = az + (bz - az) * i / n; box(scene, x - .05, x + .05, z - .05, z + .05, 2, post, .26, false); } };
+  fence(215.2, -22.8, 238, -22.8); fence(252, -22.8, 261.8, -22.8); fence(261.8, -22.8, 261.8, 6.8);
+  // barrier at the gate: housing, red and white boom resting closed
+  box(scene, 251.6, 252.4, -23.6, -23, 1.1, M('#e8e4dc', { roughness: .5 }), .26);
+  { const boom = new THREE.Group(); boom.position.set(252, 1.2, -23.3);
+    for (let i = 0; i < 14; i++) { const seg = new THREE.Mesh(new THREE.BoxGeometry(1, .1, .1), M(i % 2 ? '#ffffff' : '#c8281e', { roughness: .5 })); seg.position.x = -.5 - i; boom.add(seg); }
+    scene.add(boom); }
+  for (let z = -20; z <= 4; z += 8) flat(215.5, 232, z - .08, z + .08, yellow, .27);                   // dock bay lines (on the raised yard)
   for (let x = 236; x < 254; x += 1.6) flat(x, x + .5, -22, -16, yellow, .27);                          // keep-clear hatching
   const lorry = new THREE.Group(), white2 = M('#eef0f0', { roughness: .5 }), dark = M('#2b3036', { roughness: .6 }), blue = M('#1f4fa0', { roughness: .5 });
   box(lorry, 0, 13.6, -1.25, 1.25, 2.9, white2, .9); box(lorry, 0, 13.6, -1.27, -1.25, .6, blue, 2.6, false); box(lorry, 0, 13.6, 1.25, 1.27, .6, blue, 2.6, false);
