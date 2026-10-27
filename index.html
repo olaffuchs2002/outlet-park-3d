@@ -912,7 +912,7 @@ function lotCol(x1, z1, z2, west = false, ly = .14) {
 lot(-255, 228, -61, -25, [-57, -47]);                        // 6 — north parking, up to the north-east road
 lot(-200, 15, 112, 158, null, false, false);                  // 24 — west part, one grid from the hotel side to the main entrance
 lotCol(-205, 112, 158);                                       // extra column in the grass wedge by the west ring road, facing car park 24's first aisle
-lotCol(-210, 112, 150, true); flat(-210, -205, 150, 158, asphalt, .1); paved.push([-210, -205, 150, 158]);   // asphalt, not grass, past the end of the row                                 // and one more facing west, onto an aisle in the wedge, kept off the verge
+lotCol(-210, 112, 158, true);   // asphalt, not grass, past the end of the row                                 // and one more facing west, onto an aisle in the wedge, kept off the verge
 { const P = [[westX(112), 112], [-210, 112], [-210, 158], [westX(158), 158]]; flatShape(P, asphalt, .1); pavedFns.push((x, z) => inPoly(x, z, P)); }
 lot(35, 286, 112, 158, [41, 51], false, false);               // 24 — east of the main entrance
 road(-212, 292, 158, 165);                                    // front service road along the whole pad row, from the ring road to the car wash
