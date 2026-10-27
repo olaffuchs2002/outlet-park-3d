@@ -782,6 +782,7 @@ road(-226, 287, 104, 112);                                                // roa
 road(19, 31, 112, 190);                                                    // internal road between the two halves of car park 24
 // kerbed concrete sidewalks along the access road, broken where the service road crosses, with granite kerbs on the road side
 { const kerb = M('#8d8f8f', { roughness: .8 });
+  roadRects.push([15, 35, 186, 192]);                       // the ring road's divider stops short of the sidewalk ends at the main entrance
   [[112, 158], [165, 190]].forEach(([z1, z2]) => {
     box(scene, 15, 18.8, z1, z2, .15, pave, .1, false); box(scene, 31.2, 35, z1, z2, .15, pave, .1, false);
     box(scene, 18.8, 19, z1, z2, .17, kerb, .1, false); box(scene, 31, 31.2, z1, z2, .17, kerb, .1, false);
@@ -935,6 +936,7 @@ lot(-200, -178, 165, 190, null, false, false);                // west of the hot
 lotCol(-205, 165, 182);                                       // one row in the corner wedge, facing that car park's first aisle
 { const P = [[westX(165), 165], [-200, 165], [-200, 190], [westX(190), 190]]; flatShape(P, asphalt, .1); pavedFns.push((x, z) => inPoly(x, z, P)); }   // asphalt up to the ring road, no grass sliver
 lot(-40, 15, 165, 190, null, false, false);                   // pad row between McDonald's and the main entrance, same grid
+lotCol(-45, 166, 190);                                        // row beside McDonald's garden, facing that car park's first aisle
 lot(-274, -142, -142.5, -97, null, false, false, .27);        // behind Gym & Padel, its row-end islands right at the north ring road
 // strip along the west ring road, on the same column grid as car park 6 above it; a wide aisle and the sidewalk along the buildings
 { const P = [[westX(-24), -24], [-223, -24], [-223, 104], [westX(104), 104]]; flatShape(P, asphalt, .09); pavedFns.push((x, z) => inPoly(x, z, P)); }   // asphalt up to the divider
@@ -1124,8 +1126,8 @@ strip([-66, -110], [21, -99], 3, pave, 0.33);
 }
 // 20 McDonald's with drive-thru lane
 { const g = bgroup('mcd');
-  flat(-92, -54, 166, 190, pave, 0.1);                                           // paved forecourt round the restaurant
-  flat(-91.5, -86.5, 166.5, 190, asphalt, 0.105); flat(-86.5, -54.5, 186, 190, asphalt, 0.105);   // drive-thru lane, asphalt
+  flat(-92, -48.5, 166, 190, pave, 0.1);                                         // one paved plot: forecourt, totem and garden
+  flat(-48.5, -40, 166, 190, asphalt, 0.1); paved.push([-48.5, -40, 166, 190]);   // asphalt beside the garden for one more row of stalls
   const red = M('#c8281e');
   box(g, -84, -62, 171, 185, 4.5, [red, red, M('#3d3f42'), red, red, red]);
   box(g, -84.3, -61.7, 170.7, 185.3, .8, M('#f2b705'), 4.5);
@@ -1136,15 +1138,14 @@ strip([-66, -110], [21, -99], 3, pave, 0.33);
   const p = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), mMat); p.position.set(-90, 12.5, 187.35); g.add(p);
   solids.push([-93, -53, 165, 191]);
 }
-// McDonald's outdoor terrace east of the drive-thru lane: deck, planters, tables, chairs, umbrellas
-{ const g = groups.mcd;
-  flat(-53.5, -40.5, 166, 189, M('#b5895c', { roughness: .8 }), .1, g);
+// McDonald's garden right against the restaurant's east wall: deck, hedged planters, tables, chairs, umbrellas
+{ const g = new THREE.Group(); g.position.x = -8.5; groups.mcd.add(g);   // drawn at its old spot, moved 8.5 m west onto the building
+  flat(-53.5, -40.5, 166, 189, M('#b5895c', { roughness: .8 }), .12, g);
   const planter = M('#3a4046', { metalness: .4, roughness: .5 }), steel = M('#2f353b', { metalness: .5, roughness: .4 }), top = M('#e8e4dc', { roughness: .5 });
   box(g, -53.6, -40.4, 165.8, 166.4, .6, planter, 0, false); box(g, -53.6, -40.4, 188.6, 189.2, .6, planter, 0, false);
-  box(g, -53.6, -53, 166.4, 188.6, .6, planter, 0, false); box(g, -41, -40.4, 166.4, 183, .6, planter, 0, false);   // opening at the south-east corner
-  for (let x = -52.8; x < -41; x += 1.3) { shrub(x, 166.1, .6); shrub(x, 188.9, .6); }
-  for (let z = 167.2; z < 188; z += 1.3) shrub(-53.3, z, .6);
-  for (let z = 167.2; z < 182.5; z += 1.3) shrub(-40.7, z, .6);
+  box(g, -41, -40.4, 166.4, 183, .6, planter, 0, false);   // open to the restaurant on the west, gap at the south-east corner
+  for (let x = -52.8; x < -41; x += 1.3) { shrub(x - 8.5, 166.1, .6); shrub(x - 8.5, 188.9, .6); }
+  for (let z = 167.2; z < 182.5; z += 1.3) shrub(-49.2, z, .6);
   const umbCols = [M('#d8262e', { roughness: .7 }), M('#f2b705', { roughness: .7 })];
   let n = 0;
   for (const x of [-49.8, -44.2]) for (let z = 169.6; z < 187; z += 4.3, n++) {
@@ -1610,7 +1611,7 @@ const CAR_COLS = ['#f2f2ef', '#f2f2ef', '#c4c7ca', '#9ea3a8', '#2a2d31', '#1c1e2
       if (!(x > -252 && x < -224 && z > -26 && z < 74) && !(x > -225 && x < -199 && z > 110 && z < 160)) pts.push([x, z]); }   // none on the stall columns in the west wedges
   });
   for (let x = -250; x < 210; x += 30) { pts.push([x, -61.6]); pts.push([x, -25.4]); }
-  for (let x = -195; x < 280; x += 30) if (Math.abs(x) > 12) { pts.push([x, 104.3]); if (x > -184) pts.push([x, 165.5]); }
+  for (let x = -195; x < 280; x += 30) if (Math.abs(x) > 12) { pts.push([x, 104.3]); if (x > -184 && x !== -45) pts.push([x, 165.5]); }
   const poleMat = M('#4f5458', { metalness: .5, roughness: .45 });
   const poles = new THREE.InstancedMesh(new THREE.CylinderGeometry(.09, .14, 8, 8), poleMat, pts.length);
   const arms = new THREE.InstancedMesh(new THREE.BoxGeometry(1.6, .1, .1).translate(.75, -.05, 0), poleMat, pts.length);
