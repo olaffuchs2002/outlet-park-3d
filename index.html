@@ -1200,7 +1200,11 @@ const PARK = [-68, 21, -140, -70];                                    // narrowe
   const glassK = M('#9cc2d6', { metalness: .4, roughness: .1, transparent: true, opacity: .75 }), white = M('#f1ebdd', { roughness: .6 }), top = M('#e8e4dc', { roughness: .5 });
   [Math.PI * .25, Math.PI * 1.25].forEach(a => {
     const x = Math.cos(a) * 23.5, z = 41 + Math.sin(a) * 23.5;
-    box(g, x - 2.2, x + 2.2, z - 1.6, z + 1.6, 2.8, glassK, .39); box(g, x - 2.6, x + 2.6, z - 2, z + 2, .3, steel, 3.19);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 2.1, 2.7, 40), glassK); body.position.set(x, .39 + 1.35, z); g.add(body);   // round glass pavilion
+    const roof = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, .22, 48), steel); roof.position.set(x, 3.2, z); roof.castShadow = true; g.add(roof);   // thin overhanging disc roof
+    const fascia = new THREE.Mesh(new THREE.CylinderGeometry(3.42, 3.42, .1, 48, 1, true), timber); fascia.position.set(x, 3.06, z); g.add(fascia);
+    const counter = new THREE.Mesh(new THREE.CylinderGeometry(2.35, 2.35, 1.05, 40, 1, false, a + Math.PI / 2, Math.PI), timber); counter.position.set(x, .39 + .52, z); counter.castShadow = true; g.add(counter);   // timber counter on the side facing the fountain
+    box(g, x - .12, x + .12, z - .12, z + .12, 2.8, steel, .39, false);
     for (let k = 0; k < 4; k++) { const b = a + Math.PI / 2 + (k - 1.5) * .22, tx = x + Math.cos(a + Math.PI) * 4.5 + Math.cos(b) * 3, tz = z + Math.sin(a + Math.PI) * 4.5 + Math.sin(b) * 3;
       const tl = new THREE.Mesh(new THREE.CylinderGeometry(.45, .45, .05, 16), top); tl.position.set(tx, 1.15, tz); g.add(tl); box(g, tx - .04, tx + .04, tz - .04, tz + .04, .75, steel, .39, false);
       const u = new THREE.Mesh(new THREE.ConeGeometry(1.4, .5, 10), white); u.position.set(tx, 2.75, tz); u.castShadow = true; g.add(u); box(g, tx - .03, tx + .03, tz - .03, tz + .03, 2.4, steel, .39, false); }
