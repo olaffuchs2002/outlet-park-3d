@@ -1005,7 +1005,8 @@ lot(-200, -178, 165, 190, null, false, false);                // west of the hot
 lotCol(-205, 165, 182);                                       // one row in the corner wedge, facing that car park's first aisle
 { const P = [[westX(165), 165], [-200, 165], [-200, 190], [westX(190), 190]]; flatShape(P, asphalt, .1); pavedFns.push((x, z) => inPoly(x, z, P)); }   // asphalt up to the ring road, no grass sliver
 lot(-40, 15, 165, 190, null, false, false);
-lot(103, 151, 165, 190, null, false, false);                 // where the bus stop was, beside KFC                   // pad row between McDonald's and the main entrance, same grid
+lot(103, 151, 165, 190, null, false, false);                 // where the bus stop was, beside KFC
+flat(101.5, 103.5, 165, 190, asphalt, .1);                   // no strip of paving between it and the fuel station forecourt                   // pad row between McDonald's and the main entrance, same grid
 lotCol(-45, 166, 190);                                        // row beside McDonald's garden, facing that car park's first aisle
 flatShape(GYM_LOTS, asphalt, .09); pavedFns.push((x, z) => inPoly(x, z, GYM_LOTS));
 lot(-274, -142, -142.5, -97, null, false, false);
@@ -1446,7 +1447,7 @@ function tag(text, x, y, z, color) {
   const bd = new THREE.Mesh(new THREE.PlaneGeometry(4, .45), bMat); bd.position.set(117.5, 2.8, 183.52); g.add(bd);
   box(g, 127.95, 128.05, 184, 184.1, 3, steel, .25);
   sign(g, 'PRZYSTANEK · OUTLET PARK', 128, 3.05, 184.12, 2.4, .5, '#f2c12e', '#1d2822', 0);
-  [[105.5, 182], [131.5, 182]].forEach(([x, z]) => { box(g, x - 1.4, x + 1.4, z - 1.4, z + 1.4, .55, steel, .25); flat(x - 1.2, x + 1.2, z - 1.2, z + 1.2, T('#5f8c3c', TX.grass), .81, g); tree(x, z, .75, 1); });
+  [[105.5, 182], [131.5, 182]].forEach(([x, z]) => { box(g, x - 1.4, x + 1.4, z - 1.4, z + 1.4, .55, steel, .25); flat(x - 1.2, x + 1.2, z - 1.2, z + 1.2, T('#5f8c3c', TX.grass), .81, g); tree(237 - x, 390 - z, .75, 1); });
   // the bus waiting in the bay, heading east
   const body = M('#f1f3f4', { roughness: .3, metalness: .25 }), win = M('#1b252d', { roughness: .06, metalness: .85 }), red = M('#c4262e', { roughness: .5 });
   box(g, 106, 118, 186.6, 189.1, 2.6, body, .5);
@@ -1462,7 +1463,7 @@ function tag(text, x, y, z, color) {
   g.rotation.y = Math.PI; g.position.set(237, 0, 390);                                       // x stays, z 190 -> 200: the bay now opens onto the ring road from outside
   flatShape([[96, 200], [103, 200], [103, 205]], asphalt, .1); flatShape([[141, 200], [134, 205], [134, 200]], asphalt, .1);   // tapered entry and exit
   pavedFns.push((x, z) => x > 95 && x < 142 && z > 199 && z < 206);                          // no kerb across the bay
-  for (let x = 98.6; x < 102.4; x += 1.1) flat(x, x + .55, 190.5, 199.5, white, .17);        // zebra over the ring road to the platform
+  for (let z = 190.8; z < 199.3; z += 1.1) flat(97.5, 103, z, z + .55, white, .17);         // zebra over the ring road to the platform, stripes along the road
   solids.push([103, 134, 200, 210.5]);
   tag('Przystanek autobusowy', 117.5, 5.8, 208, '#f2c12e');
 }
