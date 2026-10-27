@@ -909,7 +909,7 @@ function lotCol(x1, z1, z2, west = false, ly = .14) {
   zs.forEach(z => { stalls++; if (rnd() < .74) cars.push([x1 + 2.5 + rr(-.12, .12), z + 1.25, west ? Math.PI / 2 : -Math.PI / 2, ly]); });
   solids.push([x1, x1 + 5, z1, z2]); paved.push([x1, x1 + 5, z1, z2]);
 }
-lot(-255, 228, -61, -24, [-57, -47], true, false);   // stalls run right down to the pedestrian block, the north aisle links the columns                        // 6 — north parking, up to the north-east road
+lot(-255, 228, -61, -24, [-57, -47]);                        // 6 — north parking, aisles of equal width along both long sides                        // 6 — north parking, up to the north-east road
 lot(-200, 15, 112, 158, null, false, false);                  // 24 — west part, one grid from the hotel side to the main entrance
 lotCol(-205, 112, 158);                                       // extra column in the grass wedge by the west ring road, facing car park 24's first aisle
 lotCol(-210, 112, 158, true);   // asphalt, not grass, past the end of the row                                 // and one more facing west, onto an aisle in the wedge, kept off the verge
