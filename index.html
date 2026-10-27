@@ -909,7 +909,7 @@ function lotCol(x1, z1, z2, west = false, ly = .14) {
   zs.forEach(z => { stalls++; if (rnd() < .74) cars.push([x1 + 2.5 + rr(-.12, .12), z + 1.25, west ? Math.PI / 2 : -Math.PI / 2, ly]); });
   solids.push([x1, x1 + 5, z1, z2]); paved.push([x1, x1 + 5, z1, z2]);
 }
-lot(-255, 228, -61, -25, [-57, -47]);                        // 6 — north parking, up to the north-east road
+lot(-255, 228, -61, -24, [-57, -47], true, false);   // stalls run right down to the pedestrian block, the north aisle links the columns                        // 6 — north parking, up to the north-east road
 lot(-200, 15, 112, 158, null, false, false);                  // 24 — west part, one grid from the hotel side to the main entrance
 lotCol(-205, 112, 158);                                       // extra column in the grass wedge by the west ring road, facing car park 24's first aisle
 lotCol(-210, 112, 158, true);   // asphalt, not grass, past the end of the row                                 // and one more facing west, onto an aisle in the wedge, kept off the verge
@@ -920,15 +920,16 @@ lot(-136, -92, 165, 190, null, false, false);                 // pad row between
 lot(-200, -178, 165, 190, null, false, false);                // west of the hotel, same columns as car park 24 across the service road
 { const P = [[westX(165), 165], [-200, 165], [-200, 190], [westX(190), 190]]; flatShape(P, asphalt, .1); pavedFns.push((x, z) => inPoly(x, z, P)); }   // asphalt up to the ring road, no grass sliver
 lot(-40, 15, 165, 190, null, false, false);                   // pad row between McDonald's and the main entrance, same grid
-lot(-274, -142, -138, -97, null, false, false, .27);          // behind Gym & Padel, off the north ring road
-for (let x = -274; x < -142; x += 16) { box(scene, x, x + 6, -141, -138, .27, asphalt, 0, false); roadRects.push([x, x + 6, -141, -138]); }   // aisle mouths across the verge
+lot(-274, -142, -140, -97, null, false, false, .27);          // behind Gym & Padel, right up to the north ring road
+for (let x = -274; x < -142; x += 16) roadRects.push([x, x + 6, -141, -139]);   // its aisles open onto the ring road
 lot(-226, -204, -20, 104, null, false, false);                // strip along the west ring road, off the cross road
 lotCol(-204, -20, 104, true);                                 // last column behind Decathlon and Kaufland, facing the strip's second aisle
 lotCol(-231, -20, 72);                                        // extra column in the grass wedge by the west ring road, facing the strip's aisle
-road(-255, -204, -25, -20);                                   // link from the west strip's aisles to car park 6
+road(-255, -199, -24, -20);                                   // link from the west strip's aisles to car park 6
+lotCol(-260, -54, -31);                                       // short row at the west end of car park 6, facing its first aisle
 { const zc = -20 + (-226 - westX(-20)) * 124 / (westX(104) - westX(-20)), P = [[westX(-20), -20], [-226, -20], [-226, zc]]; flatShape(P, asphalt, .09); pavedFns.push((x, z) => inPoly(x, z, P)); }   // whole west wedge paved up to the divider, no grass scraps
 lotCol(-242, -20, 36);                                        // short row along it, as far as the divider allows
-road(westX(-58) - 2, -255, -61, -55); road(westX(-28) - 2, -255, -31, -25);   // car park 6 aisles out to the west ring road
+road(westX(-58) - 2, -255, -61, -55); road(westX(-28) - 2, -255, -31, -24);   // car park 6 aisles out to the west ring road
 // the remaining wedges between the ring road and the car parks are paved up to the divider, so no grass scraps are left
 { const eastX = z => RING10[2][0] + (RING10[3][0] - RING10[2][0]) * (z - RING10[2][1]) / (RING10[3][1] - RING10[2][1]);
   const zAt = (f, x, za, zb) => za + (x - f(za)) * (zb - za) / (f(zb) - f(za));
