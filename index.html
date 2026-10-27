@@ -1111,26 +1111,22 @@ const PARK = [-68, 21, -140, -70];                                    // narrowe
   const planterMat = M('#3a4046', { metalness: .4, roughness: .5 }), seat = M('#b5895c', { roughness: .8 });
   [['1B', 93], ['2B', 0], ['3B', -93]].forEach(([n, lz]) => {
     flat(-12.5, 12.5, lz - 32.5, lz + 32.5, pave, 0.06, g);                   // paved apron round the building
-    flat(12.5, 18.5, lz - 9, lz + 9, pave, 0.065, g);                         // entrance plaza facing the park
-    // the building's own car park: one row of stalls along the front, an aisle beside the ring road, open to it at both ends
-    const setts = T('#b9b2a8', TX.slab), mark = M('#6f6a63', { roughness: .9 });   // paved forecourt with stalls marked in dark stone
-    flat(12.5, 25.6, lz - 34, lz + 34, setts, 0.07, g);
-    flat(18.5, 25.6, lz - 2.5, lz - 2.2, mark, .08, g); flat(18.5, 25.6, lz + 2.2, lz + 2.5, mark, .08, g);   // marked crossing to the entrance
-    [[-32.5, -9.5], [9.5, 32.5]].forEach(([a, b]) => {
-      for (let z = lz + a; z <= lz + b + .01; z += 2.5) flat(13.5, 18.5, z - .1, z + .1, mark, .08, g);   // stall lines
-      for (let z = lz + a; z + 2.5 <= lz + b + .01; z += 2.5) { stalls++; if (rnd() < .8) { const [x, wz] = toWorld(16, z + 1.25); cars.push([x, wz, Math.PI / 2 + th, .07]); } }
-    });
-    [lz - 34, lz + 28].forEach(z0 => { const P = [toWorld(18.5, z0), toWorld(30, z0), toWorld(30, z0 + 6), toWorld(18.5, z0 + 6)]; pavedFns.push((x, z) => inPoly(x, z, P)); });   // openings in the kerb
-    [-6, 6].forEach(dz => {                                                    // low planters and benches either side of the entrance
-      box(g, 14.5, 18.5, lz + dz - 2, lz + dz + 2, .5, planterMat, 0, false);
-      box(g, 19.2, 19.7, lz + dz - 1.5, lz + dz + 1.5, .45, seat, 0, false);
-    });
+    // forecourt in the same paving as the apron and no longer than it: benches and trees in pits by the building,
+    // a walkway, then one row of stalls entered straight from the ring road
+    const mark = M('#8a847b', { roughness: .9 }), pit = M('#4a4038', { roughness: 1 }), grate = M('#2f353b', { metalness: .5, roughness: .5 });
+    flat(12.5, 25.4, lz - 32.5, lz + 32.5, pave, 0.065, g);
+    for (let z = lz - 32.5; z <= lz + 32.5 + .01; z += 2.5) flat(20.4, 25.4, z - .08, z + .08, mark, .075, g);   // stall lines
+    flat(20.3, 20.5, lz - 32.5, lz + 32.5, mark, .075, g);                                                       // back line of the stalls
+    for (let z = lz - 32.5; z + 2.5 <= lz + 32.5 + .01; z += 2.5) { stalls++; if (rnd() < .55) { const [x, wz] = toWorld(22.9, z + 1.25); cars.push([x, wz, -Math.PI / 2 + th, .065]); } }
+    { const P = [toWorld(20.4, lz - 32.5), toWorld(30, lz - 32.5), toWorld(30, lz + 32.5), toWorld(20.4, lz + 32.5)]; pavedFns.push((x, z) => inPoly(x, z, P)); }   // no kerb in front of the stalls
+    for (let d = -28; d <= 28; d += 8) {                                       // trees in square pits with a steel grate, benches between them
+      if (Math.abs(d) < 6) continue;
+      flat(14.2, 16.8, lz + d - 1.3, lz + d + 1.3, grate, .07, g); flat(14.5, 16.5, lz + d - 1, lz + d + 1, pit, .075, g);
+      const [x, z] = toWorld(15.5, lz + d); tree(x, z, rr(.85, 1.05), 1);
+      if (d < 28) { box(g, 14.6, 15.1, lz + d + 2.2, lz + d + 5.8, .45, seat, .065, false); }
+    }
     for (let d = -28; d <= 28; d += 8) { const [x, z] = toWorld(-16, lz + d); tree(x, z, rr(.95, 1.15), 1); }   // trees along the back only, the front stays open to the park
     if (lz > -93) for (let lx = -8; lx <= 8; lx += 8) for (const d of [-41, -52]) { const [x, z] = toWorld(lx, lz + d); tree(x, z, rr(.95, 1.2), 1); }   // trees in the gaps between the buildings
-    if (lz > -93) {                                                          // small garden between the buildings: a paved path with benches under the trees
-      flat(-12.5, 12.5, lz - 47.5, lz - 45.5, pave, .065, g);
-      for (const lx of [-8, 0, 8]) [[lz - 44.6, 0], [lz - 48.4, Math.PI]].forEach(([bz, r]) => { box(g, lx - 1, lx + 1, bz - .25, bz + .25, .08, seat, .42); box(g, lx - .9, lx + .9, bz - .2, bz + .2, .42, planterMat, 0, false); });
-    }
     const n0 = solids.length;
     const ob = bldg(g, -10, 10, lz - 30, lz + 30, 11.5, { fit: FIT, facade: 'wood', levels: 3, noAO: true, faces: ['n', 's', 'e', 'w'], canopy: false });
     solids.length = n0;                                                        // bldg records local coordinates; record the turned footprint instead
