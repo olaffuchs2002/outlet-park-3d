@@ -771,7 +771,7 @@ const GYM_LOTS = [[westX(-139.9) + .1, -139.9], [-142, -139.9], [-142, -97], [-2
 // north row, raised behind a kerb, cut back along the verge of the west ring road
 const NORTH_ROW = [[westX(-140), -140], RING10[1], [RING10[1][0] + (RING10[2][0] - RING10[1][0]) * 78 / (RING10[2][1] - RING10[1][1]), -62], [westX(-62), -62]];   // out to the diagonal ring road, round Fly Park
 // the paved slab itself is traced round the car parks (no holes), so no strips of paving are left between them
-{ const SLAB = [[-68, -140], RING10[1], NORTH_ROW[2], [-250.1, -62], [-250.1, -97], [-142, -97], [-142, -70], [-68, -70]];
+{ const SLAB = [[-68, -140], RING10[1], NORTH_ROW[2], [-250.1, -62], [-250.1, -97], [-135, -97], [-135, -70], [-68, -70]];
   const sh = new THREE.Shape(SLAB.map(([x, z]) => new THREE.Vector2(x, -z)));
   const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: .25, bevelEnabled: false }), [pave, pave]); m.rotation.x = -Math.PI / 2; m.receiveShadow = true; scene.add(m); }
 flat(westX(-62) + .5, 178, -67, -62, pavePink, 0.3);
@@ -1002,7 +1002,8 @@ flatShape(GYM_LOTS, asphalt, .09); pavedFns.push((x, z) => inPoly(x, z, GYM_LOTS
 lot(-274, -142, -142.5, -97, null, false, false);
 lotCol(-268, -97, -62, true); lotCol(-263, -97, -62);         // west of Gym & Padel: the first double column of the car park behind it, carried on
 box(scene, -252, -250, -97, -62, .25, pave, 0, false); paved.push([-252, -250, -97, -62]);   // thin sidewalk along Gym & Padel's west wall
-lot(-142, -68, -142.5, -70, null, false, false);              // between Gym & Padel and the park, off the north ring road        // behind Gym & Padel, its row-end islands right at the north ring road
+lot(-146, -68, -142.5, -97, null, false, false);              // shares the last aisle of the car park behind Gym & Padel
+lotCol(-135, -97, -70); lot(-130, -68, -97, -70, null, false, false);   // beside Gym & Padel the same columns carry on, with a sidewalk along its east wall              // between Gym & Padel and the park, off the north ring road        // behind Gym & Padel, its row-end islands right at the north ring road
 // strip along the west ring road, on the same column grid as car park 6 above it; a wide aisle and the sidewalk along the buildings
 { const P = [[westX(-24), -24], [-223, -24], [-223, 104], [westX(104), 104]]; flatShape(P, asphalt, .09); pavedFns.push((x, z) => inPoly(x, z, P)); }   // asphalt up to the divider
 lotCol(-244, -24, 30);                                        // outer half-column, as far as the divider allows
