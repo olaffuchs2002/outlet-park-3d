@@ -1185,6 +1185,26 @@ const PARK = [-68, 21, -140, -70];                                    // narrowe
   [12.5, 16.8].forEach(rad => { const rim = new THREE.Mesh(new THREE.CylinderGeometry(rad, rad, .5, 72, 1, true), steel); rim.position.set(0, 4.9, 41); rim.castShadow = true; g.add(rim); });
   for (let i = 0; i < 18; i++) { const a = i / 18 * Math.PI * 2, x = Math.cos(a) * 14.6, z = 41 + Math.sin(a) * 14.6; box(g, x - .11, x + .11, z - .11, z + .11, 4.5, steel, .39); }
   for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2 + .26; tree(25 + Math.cos(a) * 19.5, 41 + Math.sin(a) * 19.5, .95, 1); }
+  // round timber bench wrapping the fountain, open on the four axes
+  for (let q = 0; q < 4; q++) {
+    const a0 = q * Math.PI / 2 + .28, a1 = a0 + Math.PI / 2 - .56;
+    const seat = new THREE.Mesh(new THREE.RingGeometry(8.6, 9.3, 24, 1, a0, a1 - a0), timber); seat.rotation.x = -Math.PI / 2; seat.position.set(0, .86, 41); g.add(seat);
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(8.85, 8.85, .45, 24, 1, true, Math.PI / 2 - a1, a1 - a0), steel); base.position.set(0, .62, 41); g.add(base);
+  }
+  // round planter seats under the trees
+  const planter = M('#3a4046', { metalness: .4, roughness: .5 });
+  for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2 + .26, x = Math.cos(a) * 19.5, z = 41 + Math.sin(a) * 19.5;
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.7, .5, 24), planter); p.position.set(x, .64, z); p.castShadow = true; g.add(p);
+    const t = new THREE.Mesh(new THREE.TorusGeometry(1.75, .16, 6, 24), timber); t.rotation.x = Math.PI / 2; t.position.set(x, .9, z); g.add(t); }
+  // two café kiosks with tables and parasols, on the diagonals facing the sun
+  const glassK = M('#9cc2d6', { metalness: .4, roughness: .1, transparent: true, opacity: .75 }), white = M('#f1ebdd', { roughness: .6 }), top = M('#e8e4dc', { roughness: .5 });
+  [Math.PI * .25, Math.PI * 1.25].forEach(a => {
+    const x = Math.cos(a) * 23.5, z = 41 + Math.sin(a) * 23.5;
+    box(g, x - 2.2, x + 2.2, z - 1.6, z + 1.6, 2.8, glassK, .39); box(g, x - 2.6, x + 2.6, z - 2, z + 2, .3, steel, 3.19);
+    for (let k = 0; k < 4; k++) { const b = a + Math.PI / 2 + (k - 1.5) * .22, tx = x + Math.cos(a + Math.PI) * 4.5 + Math.cos(b) * 3, tz = z + Math.sin(a + Math.PI) * 4.5 + Math.sin(b) * 3;
+      const tl = new THREE.Mesh(new THREE.CylinderGeometry(.45, .45, .05, 16), top); tl.position.set(tx, 1.15, tz); g.add(tl); box(g, tx - .04, tx + .04, tz - .04, tz + .04, .75, steel, .39, false);
+      const u = new THREE.Mesh(new THREE.ConeGeometry(1.4, .5, 10), white); u.position.set(tx, 2.75, tz); u.castShadow = true; g.add(u); box(g, tx - .03, tx + .03, tz - .03, tz + .03, 2.4, steel, .39, false); }
+  });
   g.position.x = 25;                                     // the square sits on the park's axis at x 25
 }
 // 19 Hotel: glazed podium, tower with vertical fins, cantilevered roof crown and rooftop terrace
@@ -1353,6 +1373,7 @@ const PARK = [-68, 21, -140, -70];                                    // narrowe
   for (const [xa, xb, zr] of [[-100, 0, 27.1], [-100, 0, 54.9], [50, 152, 27.1], [50, 152, 54.9]]) for (let x = xa + 4.5; x < xb; x += 14) { pts.push([x, zr + 2.4, 0, .36]); pts.push([x, zr - 2.4, Math.PI, .36]); }
   for (let z = -20; z < 100; z += 12) if (z < 26 || z > 56) { pts.push([19.6, z, Math.PI / 2, .33]); pts.push([30.4, z, -Math.PI / 2, .33]); }
   for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2 + .1; pts.push([25 + Math.cos(a) * 17, 41 + Math.sin(a) * 17, Math.atan2(-Math.cos(a), -Math.sin(a)), .39]); }
+  for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2 + .13; if (Math.abs(Math.sin(2 * a)) > .93) continue; pts.push([25 + Math.cos(a) * 26.5, 41 + Math.sin(a) * 26.5, Math.atan2(-Math.cos(a), -Math.sin(a)), .39]); }   // outer ring of benches facing the fountain, clear of the kiosks
   const geo = mergeGeometries([new THREE.BoxGeometry(1.8, .08, .5).translate(0, .45, 0), new THREE.BoxGeometry(1.8, .42, .07).translate(0, .72, -.22),
     new THREE.BoxGeometry(.08, .45, .45).translate(-.8, .22, 0), new THREE.BoxGeometry(.08, .45, .45).translate(.8, .22, 0)]);
   const im = new THREE.InstancedMesh(geo, M('#8a6a4a', { roughness: .8 }), pts.length), o = new THREE.Object3D();
