@@ -768,7 +768,9 @@ function ringBand(dOut, dIn, mat, y) {
 }
 ringBand(0, 10, asphalt, 0.1);
 // main entrance from S8 and the north-east access road
-const road = (x1, x2, z1, z2) => flat(x1, x2, z1, z2, asphalt, 0.1);
+// every paved surface is recorded so kerbs can be laid only where asphalt meets grass
+const paved = [], pavedFns = [];
+const road = (x1, x2, z1, z2) => { paved.push([x1, x2, z1, z2]); return flat(x1, x2, z1, z2, asphalt, 0.1); };
 road(-210, -196, 196, 226); road(-300, -100, 219, 226);                   // second entry and exit from S8, at the south-west corner, with slip lanes
 road(19, 31, 190, 226); road(-55, 105, 219, 226);                           // main entry and exit in the middle of the frontage
 road(-226, 287, 104, 112);                                                // road across the park, from the west to the east ring road
@@ -794,6 +796,27 @@ function arrow(x, z, rot) {
   m.rotation.x = -Math.PI / 2; m.rotation.z = rot; m.position.set(x, 0.17, z); scene.add(m);
 }
 arrow(-206.5, 212, 0); arrow(-199.5, 205, Math.PI); arrow(22, 212, 0); arrow(28, 205, Math.PI);
+// rounded asphalt fillets in the grass corners of the S8 junctions (corner x, z; sx, sz point into the grass)
+const fillets = [];
+const flatShape = (pts, mat, y) => { const m = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z)))), mat); m.rotation.x = -Math.PI / 2; m.position.y = y; m.receiveShadow = true; scene.add(m); return m; };
+const filletArc = (cx, cz, sx, sz, r, a) => [cx - sx * r * Math.sin(a), cz - sz * r * Math.cos(a)];   // a = 0 on the z edge, PI/2 on the x edge
+function fillet(x, z, sx, sz, r = 7) {
+  const cx = x + sx * r, cz = z + sz * r, pts = [[x, z]];
+  for (let i = 0; i <= 12; i++) pts.push(filletArc(cx, cz, sx, sz, r, i / 12 * Math.PI / 2));
+  flatShape(pts, asphalt, .1);
+  fillets.push([x, z, sx, sz, r]);
+  pavedFns.push((px, pz) => (px - x) * sx >= 0 && (px - x) * sx <= r && (pz - z) * sz >= 0 && (pz - z) * sz <= r && Math.hypot(px - cx, pz - cz) > r);
+}
+fillet(-196, 200, 1, 1); fillet(-196, 219, 1, -1); fillet(-210, 219, -1, -1);   // south-west entrance
+fillet(19, 200, -1, 1); fillet(31, 200, 1, 1); fillet(19, 219, -1, -1); fillet(31, 219, 1, -1);   // main entrance
+// slip lanes taper into the S8 hard shoulder instead of ending square
+const tapers = [];
+[[-300, -340], [-100, -78], [-55, -77], [105, 145]].forEach(([x0, x1]) => { flatShape([[x0, 219], [x1, 225], [x0, 225]], asphalt, .1); tapers.push([x0, x1]);
+  pavedFns.push((x, z) => (x - x0) * (x1 - x0) >= 0 && Math.abs(x - x0) <= Math.abs(x1 - x0) && z <= 225 && z >= 219 + 6 * (x - x0) / (x1 - x0)); });
+pavedFns.push((x, z) => z > 221.5 && z < 257);                                   // S8 with its shoulders
+const RING_IN = insetSite(10);
+pavedFns.push((x, z) => inPoly(x, z) && !inPoly(x, z, RING_IN));                // ring road
+pavedFns.push((x, z) => lineDist(x, z, NE_ROAD, false) < 5);                     // north-east access road
 for (let x = 19.6; x < 30.5; x += 1.1) { flat(x, x + .55, 166, 170.5, white, 0.17); flat(x, x + .55, 113, 117.5, white, 0.17); }   // zebras across the access road at both junctions
 
 // ---------- S8 ----------
@@ -816,16 +839,21 @@ const hedge = (x1, x2, z, y = .25, step = 1.6) => { for (let x = x1; x < x2; x +
 
 // ---------- parking lots ----------
 const cars = []; let stalls = 0;
+const islands = [];                                       // kerbed planted noses at the ends of the parking rows
 const bollards = [];
 const evSpots = [], evTags = [];                         // EV charging posts and their labels, placed by the car parks
 // car park: double columns of stalls (5 m deep, 2.5 m wide) along north–south aisles, end aisles at both ends; ev = x-range of EV columns
 // topAisle / bottomAisle false: that edge is a road, an aisle of a neighbouring car park or a wall, so stalls run right up to it; ly = surface height
 function lot(x1, x2, z1, z2, ev = null, topAisle = true, bottomAisle = true, ly = .14) {
-  const S = 6, cw = Math.round((x2 - x1) * S), ch = Math.round((z2 - z1) * S), za = z1 + (topAisle ? 6 : .5), zb = z2 - (bottomAisle ? 6 : .5);
+  const S = 6, cw = Math.round((x2 - x1) * S), ch = Math.round((z2 - z1) * S), za = z1 + (topAisle ? 6.9 : 1.5), zb = z2 - (bottomAisle ? 6.9 : 1.5);
   const cols = []; let x = x1 + 6;                        // every column faces an aisle: start with one and leave one after each double column
   for (;;) {
     if (x + 16 <= x2 + .01) { cols.push([x, true], [x + 5, false]); x += 16; }
     else { if (x + 5 <= x2 + .01) cols.push([x, false]); break; }
+  }
+  for (let i = 0; i < cols.length; i++) {               // one island across each double (or single) column, at both ends
+    const a = cols[i][0], b = cols[i][1] ? a + 10 : a + 5; if (cols[i][1]) i++;
+    islands.push([a + .15, b - .15, za - 1.3, za - .15], [a + .15, b - .15, zb + .15, zb + 1.3]);
   }
   const isEV = cx => ev && cx >= ev[0] && cx + 10 <= ev[1] + .01;
   const zs = []; for (let z = za; z + 2.5 <= zb + .01; z += 2.5) zs.push(z);
@@ -841,7 +869,7 @@ function lot(x1, x2, z1, z2, ev = null, topAisle = true, bottomAisle = true, ly 
     c.stroke();
   });
   flat(x1, x2, z1, z2, M('#ffffff', { map: tex, roughness: .95 }), ly);
-  solids.push([x1, x2, z1, z2]);
+  solids.push([x1, x2, z1, z2]); paved.push([x1, x2, z1, z2]);
   for (const [cx, first] of cols) {
     for (const z of zs) { stalls++; if (rnd() < .74) cars.push([cx + 2.5 + rr(-.12, .12), z + 1.25, first ? Math.PI / 2 : -Math.PI / 2, ly]); }
     if (!first) continue;
@@ -868,7 +896,8 @@ function lotRow(x1, x2, z1, ly = .27) {
 // single column of 5 m stalls along z, entered from the aisle on its east side (west = true: on its west side)
 function lotCol(x1, z1, z2, west = false, ly = .14) {
   const S = 6, cw = 5 * S, ch = Math.round((z2 - z1) * S), zs = [];
-  for (let z = z1; z + 2.5 <= z2 + .01; z += 2.5) zs.push(z);
+  for (let z = z1 + 1.5; z + 2.5 <= z2 - 1.5 + .01; z += 2.5) zs.push(z);
+  islands.push([x1 + .15, x1 + 4.85, z1 + .2, z1 + 1.35], [x1 + .15, x1 + 4.85, zs[zs.length - 1] + 2.65, zs[zs.length - 1] + 3.8]);
   const tex = canvasTex(cw, ch, (c) => {
     c.fillStyle = '#575b5f'; c.fillRect(0, 0, cw, ch);
     speckle(c, cw, ch, cw * ch / 12, ['#52565a', '#5e6266', '#5a5e62'], .6, 1, 2);
@@ -878,7 +907,7 @@ function lotCol(x1, z1, z2, west = false, ly = .14) {
   });
   flat(x1, x1 + 5, z1, z2, M('#ffffff', { map: tex, roughness: .95 }), ly);
   zs.forEach(z => { stalls++; if (rnd() < .74) cars.push([x1 + 2.5 + rr(-.12, .12), z + 1.25, west ? Math.PI / 2 : -Math.PI / 2, ly]); });
-  solids.push([x1, x1 + 5, z1, z2]);
+  solids.push([x1, x1 + 5, z1, z2]); paved.push([x1, x1 + 5, z1, z2]);
 }
 lot(-255, 228, -61, -25, [-57, -47]);                        // 6 — north parking, up to the north-east road
 lot(-200, 15, 112, 158, null, false, false);                  // 24 — west part, one grid from the hotel side to the main entrance
@@ -887,7 +916,7 @@ lotCol(-210, 112, 158, true);                                 // and one more fa
 { const m = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape([[-224, 112], [-210, 112], [-210, 158], [-211, 158]].map(([x, z]) => new THREE.Vector2(x, -z)))), asphalt);
   m.rotation.x = -Math.PI / 2; m.position.y = .1; m.receiveShadow = true; scene.add(m); }
 lot(35, 286, 112, 158, [41, 51], false, false);               // 24 — east of the main entrance
-road(-206, 292, 158, 165);                                    // front service road along the whole pad row, hotel to car wash
+road(-212, 292, 158, 165);                                    // front service road along the whole pad row, from the ring road to the car wash
 lot(-136, -92, 165, 190, null, false, false);                 // pad row between the hotel and McDonald's
 lot(-200, -178, 165, 190, null, false, false);                // west of the hotel, same columns as car park 24 across the service road
 lot(-40, 15, 165, 190, null, false, false);                   // pad row between McDonald's and the main entrance, same grid
@@ -1333,6 +1362,45 @@ function infraMotion(now, wind) {
   const im = new THREE.InstancedMesh(new THREE.BoxGeometry(2.4, .5, 4.2), mat, skylights.length), o = new THREE.Object3D();
   skylights.forEach(([x, z, h], i) => { o.position.set(x, h + .25, z); o.updateMatrix(); im.setMatrixAt(i, o.matrix); });
   im.castShadow = true; scene.add(im);
+}
+
+// ---------- kerbs ----------
+// raised concrete kerbs wherever asphalt meets grass, plus the rounded kerbed islands at the parking row ends
+paved.push([-205, 256, -24, 104], [-282, 128, -142, -62], [-200, 290, 165, 190], [-92, -54, 166, 190], [35, 102, 165, 190], [15, 35, 112, 190], [-224, -210, 112, 158]);
+{ const pavedAt = (x, z) => paved.some(([a, b, c, d]) => x >= a && x <= b && z >= c && z <= d) || pavedFns.some(f => f(x, z)) || solids.some(([a, b, c, d]) => x >= a && x <= b && z >= c && z <= d);
+  const geos = [], kerbMat = M('#cfccc4', { roughness: .8 });
+  const seg = (ax, az, bx, bz) => { const len = Math.hypot(bx - ax, bz - az); if (len < .3) return;
+    geos.push(new THREE.BoxGeometry(len, .17, .3).rotateY(-Math.atan2(bz - az, bx - ax)).translate((ax + bx) / 2, .185, (az + bz) / 2)); };
+  // walk an edge in 1 m steps; n points away from the paved side; kerb runs where the ground beyond the edge is not paved
+  const edge = (ax, az, bx, bz, nx, nz) => {
+    const len = Math.hypot(bx - ax, bz - az), n = Math.max(1, Math.round(len)), ox = nx * .15, oz = nz * .15; let start = -1;
+    for (let i = 0; i <= n; i++) {
+      const t0 = i / n, t1 = (i + .5) / n, mx = ax + (bx - ax) * Math.min(t1, 1), mz = az + (bz - az) * Math.min(t1, 1);
+      const on = i < n && !pavedAt(mx + nx * .6, mz + nz * .6);
+      if (on && start < 0) start = i;
+      if (!on && start >= 0) { seg(ax + (bx - ax) * start / n + ox, az + (bz - az) * start / n + oz, ax + (bx - ax) * t0 + ox, az + (bz - az) * t0 + oz); start = -1; }
+    }
+  };
+  const rect = ([x1, x2, z1, z2]) => { edge(x1, z1, x2, z1, 0, -1); edge(x1, z2, x2, z2, 0, 1); edge(x1, z1, x1, z2, -1, 0); edge(x2, z1, x2, z2, 1, 0); };
+  paved.slice().forEach(rect);
+  const ring = (P, sign) => P.forEach((a, i) => { const b = P[(i + 1) % P.length], s = inward(SITE[i], SITE[(i + 1) % SITE.length]) * sign, l = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    edge(a[0], a[1], b[0], b[1], -(b[1] - a[1]) / l * s, (b[0] - a[0]) / l * s); });
+  ring(SITE, -1); ring(RING_IN, 1);
+  tapers.forEach(([x0, x1]) => { const k = Math.sign(x1 - x0); seg(x0, 218.85, x1, 224.85 - k * 0); });   // kerb along each taper
+  fillets.forEach(([x, z, sx, sz, r]) => { const cx = x + sx * r, cz = z + sz * r; let p = filletArc(cx, cz, sx, sz, r - .15, 0);
+    for (let i = 1; i <= 12; i++) { const q = filletArc(cx, cz, sx, sz, r - .15, i / 12 * Math.PI / 2); seg(p[0], p[1], q[0], q[1]); p = q; } });
+  const isl = [], top = [], greenMat = T('#5f8c3c', TX.grass, { roughness: 1 });
+  islands.forEach(([x1, x2, z1, z2]) => {
+    const r = Math.min(x2 - x1, z2 - z1) / 2 - .01, sh = new THREE.Shape(roundedRectPts(x1, x2, z1, z2, r).map(([x, z]) => new THREE.Vector2(x, -z)));
+    isl.push(new THREE.ExtrudeGeometry(sh, { depth: .17, bevelEnabled: false, curveSegments: 4 }));
+    const sh2 = new THREE.Shape(roundedRectPts(x1 + .2, x2 - .2, z1 + .2, z2 - .2, Math.max(.05, r - .2)).map(([x, z]) => new THREE.Vector2(x, -z)));
+    top.push(new THREE.ShapeGeometry(sh2));
+  });
+  [[mergeGeometries(geos), kerbMat, 0], [mergeGeometries(isl), kerbMat, .14], [mergeGeometries(top), greenMat, .315]].forEach(([g, m, y]) => {
+    if (!g) return; const mesh = new THREE.Mesh(g, m);
+    if (y) { mesh.rotation.x = -Math.PI / 2; mesh.position.y = y; }
+    mesh.receiveShadow = true; scene.add(mesh);
+  });
 }
 
 // ---------- vegetation ----------
