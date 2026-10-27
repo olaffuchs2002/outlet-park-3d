@@ -1133,6 +1133,9 @@ const PARK = [-68, 21, -140, -70];                                    // narrowe
     const cx = -285 + lz * Math.sin(th), cz = 10 + lz * Math.cos(th), hx = 10 * Math.cos(th) + 30 * Math.sin(th), hz = 10 * Math.sin(th) + 30 * Math.cos(th);
     solids.push([cx - hx - 1.5, cx + hx + 1.5, cz - hz - 1.5, cz + hz + 1.5]);
     faceSign(g, 'e', n, ob.x1, ob.x2, ob.z1, ob.z2, 10.4, 3, 1.4, '#7d8ba0', '#ffffff');
+    { const frame = M('#2c3136', { metalness: .6, roughness: .35 });           // entrance portal: a graphite frame standing proud of the facade, glazed inside
+      box(g, 10, 12, lz - 4, lz - 3.2, 4.6, frame); box(g, 10, 12, lz + 3.2, lz + 4, 4.6, frame); box(g, 10, 12, lz - 4, lz + 4, .7, frame, 4.6);
+      box(g, 10.02, 10.35, lz - 3.2, lz + 3.2, 4.6, winMat, 0, false); box(g, 10.35, 10.45, lz - .05, lz + .05, 3, frame, 0, false); }
   });
 }
 // 12 Decathlon, 11 Kaufland
