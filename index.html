@@ -854,7 +854,7 @@ const evSpots = [], evTags = [];                         // EV charging posts an
 // car park: double columns of stalls (5 m deep, 2.5 m wide) along north–south aisles, end aisles at both ends; ev = x-range of EV columns
 // topAisle / bottomAisle false: that edge is a road, an aisle of a neighbouring car park or a wall, so stalls run right up to it; ly = surface height
 function lot(x1, x2, z1, z2, ev = null, topAisle = true, bottomAisle = true, ly = .14) {
-  const footTop = !topAisle && onFootway((x1 + x2) / 2, z1 - .8), footBot = !bottomAisle && onFootway((x1 + x2) / 2, z2 + .8);
+  const footTop = onFootway((x1 + x2) / 2, z1 - .8), footBot = onFootway((x1 + x2) / 2, z2 + .8);   // a footway beyond the end (with or without an aisle between): no island there
   const S = 6, cw = Math.round((x2 - x1) * S), ch = Math.round((z2 - z1) * S), za = z1 + (topAisle ? 6.9 : footTop ? .3 : 1.5), zb = z2 - (bottomAisle ? 6.9 : footBot ? .3 : 1.5);
   const cols = []; let x = x1 + 6;                        // every column faces an aisle: start with one and leave one after each double column
   for (;;) {
