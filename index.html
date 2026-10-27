@@ -749,7 +749,7 @@ for (const [z1, z2] of [[262, 560], [565, 800]]) {
 // ---------- surfaces inside the site ----------
 const pave = T('#d2ccc3', TX.slab), pavePink = T('#dccbbf', TX.promenade), paveGrey = T('#a39e95', TX.paving), asphalt = T('#55595d', TX.asphalt, { roughness: .95 });
 box(scene, -199, 256, -24, 78, .25, pave, 0, false); box(scene, -196, -112, 78, 82, .25, pave, 0, false); box(scene, -112, 256, 78, 104, .25, pave, 0, false);   // the Kaufland car park is cut out, at road level   // main pedestrian block, a 2 m sidewalk along the back of Decathlon and Kaufland
-flat(-200, 290, 165, 190, paveGrey, 0.06);              // pad row along the road
+flat(-200, 290, 165, 190, pave, 0.06);                  // pad row along the road, the same paving as everywhere else
 // pink walkways from the sketch: block perimeter, the two cross axes, north promenade
 flat(18, 32, -24, 104, pavePink, 0.33); flat(5, 47, 32, 50, pavePink, 0.36);
 // walkways on both sides of the 15 and 16 strips (equal gaps to their neighbours)
@@ -1323,6 +1323,13 @@ const PARK = [-68, 21, -140, -70];                                    // narrowe
   g.position.x = -12;                                    // station moved 12 m west, onto its own asphalt forecourt
   solids.push([37, 89, 166, 190]);
   flat(35, 102, 165, 190, asphalt, .1);
+}
+// small square between the bus stop and KFC: trees in grated pits, benches and a bike rack
+{ const pit = M('#4a4038', { roughness: 1 }), grate = M('#2f353b', { metalness: .5, roughness: .5 }), seat = M('#b5895c', { roughness: .8 }), steel = M('#2f353b', { metalness: .5, roughness: .4 });
+  [[139.5, 172], [149.5, 172], [139.5, 183], [149.5, 183]].forEach(([x, z]) => { flat(x - 1.3, x + 1.3, z - 1.3, z + 1.3, grate, .07); flat(x - 1, x + 1, z - 1, z + 1, pit, .075); tree(x, z, rr(.85, 1), 1); });
+  [[144.5, 172], [144.5, 183]].forEach(([x, z]) => { box(scene, x - 1.8, x + 1.8, z - .25, z + .25, .08, seat, .45); box(scene, x - 1.7, x + 1.7, z - .2, z + .2, .45, steel, .06, false); });
+  [[137, 177.5], [152, 177.5]].forEach(([x, z]) => { box(scene, x - .25, x + .25, z - 1.8, z + 1.8, .08, seat, .45); box(scene, x - .2, x + .2, z - 1.7, z + 1.7, .45, steel, .06, false); });
+  solids.push([136, 153, 170, 185]);
 }
 // 22 KFC
 { const g = bgroup('kfc');
