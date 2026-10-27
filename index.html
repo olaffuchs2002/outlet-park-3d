@@ -954,8 +954,9 @@ road(westX(-58) - 2, -255, -62, -55); road(westX(-28) - 2, -255, -31, -24);   //
    [[228, -25], RING10[2], [eastX(104), 104], [256, 104], [256, -24], [228, -24]],                              // along the east ring road
    [[286, zAt(eastX, 286, 104, 190)], [eastX(190), 190], [286, 190]]                                              // by the car wash
   ].forEach(P => { flatShape(P, asphalt, .09); pavedFns.push((x, z) => inPoly(x, z, P)); });
-  lotCol(271, 52, 104, true);                                  // row along the east road, facing an aisle beside Dom i Ogród that opens onto the cross road
-  box(scene, 262, 264.8, 7, 104, .15, pave, .1, false); box(scene, 264.8, 265, 7, 104, .17, M('#8d8f8f', { roughness: .8 }), .1, false); paved.push([262, 265, 7, 104]);   // thin kerbed sidewalk along its east wall
+  // sidewalk from Dom i Ogród's east wall right out to the ring road, no parking along this side
+  { const P = [[262, 7], [eastX(7), 7], [eastX(104), 104], [262, 104]], m = new THREE.Mesh(new THREE.ExtrudeGeometry(new THREE.Shape(P.map(([x, z]) => new THREE.Vector2(x, -z))), { depth: .25, bevelEnabled: false }), [pave, pave]);
+    m.rotation.x = -Math.PI / 2; m.receiveShadow = true; scene.add(m); pavedFns.push((x, z) => inPoly(x, z, P)); }
 }
 lot(-196, -112, 82, 104, null, false, false);            // in front of Kaufland, off the cross road
 
@@ -973,18 +974,36 @@ lot(-196, -112, 82, 104, null, false, false);            // in front of Kaufland
   });
   bldg(g, -250, -140, -95, -67, 13, { fit: FIT, levels: 2, wall: '#3d434d', faces: ['s'], text: 'GYM & PADEL', signBg: '#8c5ec8', hvac: false });
 }
-// 18 children's playground (about 4 000 m²)
-{ const g = bgroup('pz');
-  const X1 = -134, X2 = -72, Z1 = -136, Z2 = -70;
-  flat(X1, X2, Z1, Z2, M('#c8613f'), 0.3, g);
-  flat(X1 + 6, X1 + 30, Z1 + 8, Z1 + 30, M('#4aa35a'), 0.33, g); flat(X2 - 26, X2 - 6, Z2 - 26, Z2 - 6, M('#2fa5d8'), 0.33, g);
+// 18 children's playground (about 4 000 m²), in the middle of one park between Gym & Padel and Fly Park, reached by paved alleys
+const PARK = [-134, 21, -140, -70];
+{ const [px1, px2, pz1, pz2] = PARK, grass = T('#7fa85a', TX.grass), path = T('#d8cfc2', TX.slab);
+  flat(px1, px2, pz1, pz2, grass, 0.3);
+  const X1 = -87.5, X2 = -25.5, Z1 = -137, Z2 = -73, cxp = (X1 + X2) / 2, czp = (Z1 + Z2) / 2;
+  // alleys: a loop round the playground and four paths out to the park's edges
+  flat(X1 - 6, X2 + 6, Z1 - 1, Z1 + 0, path, .32); flat(X1 - 6, X2 + 6, Z2, Z2 + 3, path, .32);
+  flat(X1 - 6, X1 - 3, Z1 - 1, Z2 + 3, path, .32); flat(X2 + 3, X2 + 6, Z1 - 1, Z2 + 3, path, .32);
+  flat(px1, X1 - 6, czp - 1.5, czp + 1.5, path, .32); flat(X2 + 6, px2, czp - 1.5, czp + 1.5, path, .32);
+  flat(cxp - 2, cxp + 2, Z2 + 3, pz2, path, .32);
+  strip([X1 - 4.5, Z2 + 1.5], [px1 + 2, pz2], 3, path, .32); strip([X2 + 4.5, Z2 + 1.5], [px2 - 2, pz2], 3, path, .32);
+  for (let k = 0; k < 9; k++) { const x = X1 - 4.5 + k * (X2 - X1 + 9) / 8; box(scene, x - .8, x + .8, Z2 + 3.4, Z2 + 3.9, .45, M('#b5895c', { roughness: .8 }), .3, false); }   // benches along the loop
+  for (let i = 0, n = 0; i < 400 && n < 70; i++) {                                    // park trees, kept off the alleys and the playground
+    const x = rr(px1 + 3, px2 - 3), z = rr(pz1 + 3, pz2 - 3);
+    if (x > X1 - 9 && x < X2 + 9 && z > Z1 - 4 && z < Z2 + 6) continue;
+    if (Math.abs(z - czp) < 4.5 || (Math.abs(x - cxp) < 5 && z > Z2)) continue;
+    if (Math.abs((z - (Z2 + 1.5)) * (px1 + 2 - (X1 - 4.5)) - (x - (X1 - 4.5)) * (pz2 - (Z2 + 1.5))) / Math.hypot(px1 + 2 - X1 + 4.5, pz2 - Z2 - 1.5) < 4) continue;
+    if (Math.abs((z - (Z2 + 1.5)) * (px2 - 2 - (X2 + 4.5)) - (x - (X2 + 4.5)) * (pz2 - (Z2 + 1.5))) / Math.hypot(px2 - 2 - X2 - 4.5, pz2 - Z2 - 1.5) < 4) continue;
+    tree(x, z, rr(.9, 1.3), 1); n++;
+  }
+  const g = bgroup('pz');
+  flat(X1, X2, Z1, Z2, M('#c8613f'), 0.33, g);
+  flat(X1 + 6, X1 + 30, Z1 + 8, Z1 + 30, M('#4aa35a'), 0.36, g); flat(X2 - 26, X2 - 6, Z2 - 26, Z2 - 6, M('#2fa5d8'), 0.36, g);
   const cols = ['#e5493a', '#f2c12e', '#36a852', '#2fa5d8', '#9c55c9'];
-  for (let i = 0; i < 30; i++) { const x = rr(X1 + 3, X2 - 6), z = rr(Z1 + 3, Z2 - 6), sz = rr(1.5, 4); box(g, x, x + sz, z, z + sz * .7, rr(.8, 3.5), M(pickOf(cols))); }
-  [[X1 + 20, Z1 + 40], [X2 - 18, Z1 + 16]].forEach(([x, z]) => { const sl = box(g, x, x + 2, z, z + 10, .3, M('#f2c12e'), 1.6); sl.rotation.x = .35; });
+  for (let i = 0; i < 30; i++) { const x = rr(X1 + 3, X2 - 6), z = rr(Z1 + 3, Z2 - 6), sz = rr(1.5, 4); box(g, x, x + sz, z, z + sz * .7, rr(.8, 3.5), M(pickOf(cols)), .3); }
+  [[X1 + 20, Z1 + 40], [X2 - 18, Z1 + 16]].forEach(([x, z]) => { const sl = box(g, x, x + 2, z, z + 10, .3, M('#f2c12e'), 1.9); sl.rotation.x = .35; });
   const fence = M('#5b5f62');
-  box(g, X1, X2, Z1 - .2, Z1, 1.1, fence, 0, false); box(g, X1, X2, Z2, Z2 + .2, 1.1, fence, 0, false);
-  box(g, X1 - .2, X1, Z1, Z2, 1.1, fence, 0, false); box(g, X2, X2 + .2, Z1, Z2, 1.1, fence, 0, false);
-  solids.push([X1 - 1, X2 + 1, Z1 - 1, Z2 + 1]);
+  box(g, X1, X2, Z1 - .2, Z1, 1.1, fence, .3, false); box(g, X1, cxp - 3, Z2, Z2 + .2, 1.1, fence, .3, false); box(g, cxp + 3, X2, Z2, Z2 + .2, 1.1, fence, .3, false);   // gate facing the square
+  box(g, X1 - .2, X1, Z1, Z2, 1.1, fence, .3, false); box(g, X2, X2 + .2, Z1, Z2, 1.1, fence, .3, false);
+  solids.push([X1 - 1, X2 + 1, Z1 - 1, Z2 + 1], [px1, px2, pz1, pz2]);
 }
 // 5 Fly Park + restaurant, with the small green park beside it
 { const roofMap = canvasTex(1280, 500, (c, w, h) => {
@@ -1003,8 +1022,6 @@ lot(-196, -112, 82, 104, null, false, false);            // in front of Kaufland
   const umb = M('#f1ebdd'), pole = M('#5b5f62');
   for (let x = fp.x1 + 26; x < fp.x1 + 52; x += 5) { const u = new THREE.Mesh(new THREE.ConeGeometry(1.6, .7, 8), umb); u.position.set(x, 2.5, fp.z2 + 4.7); u.castShadow = true; g.add(u); box(g, x - .06, x + .06, fp.z2 + 4.64, fp.z2 + 4.76, 2.2, pole, 0, false); }
 }
-flat(-66, 21, -140, -70, T('#7fa85a', TX.grass), 0.3);
-for (let i = 0; i < 46; i++) tree(rr(-64, 18), rr(-137, -73), rr(.9, 1.3), 1);
 strip([-66, -110], [21, -99], 3, pave, 0.33);
 // Biura 1B 2B 3B: three long office buildings across the west ring road (3 600 m² each, 3 storeys)
 // the group is turned to run parallel to the west boundary: local z along the road, local +x towards the site, 2B at the pivot
