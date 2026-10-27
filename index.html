@@ -859,10 +859,12 @@ function lotRow(x1, x2, z1, ly = .27) {
   solids.push([x1, x2, z1, z1 + 5]);
 }
 lot(-255, 228, -61, -25, [-57, -47]);                        // 6 — north parking, up to the north-east road
-lot(-200, -96, 112, 165, null, false, false);                 // 24 — west part, up to the McDonald's road
-lot(-88, 15, 112, 165, null, false, false);                   // 24 — between the McDonald's road and the main entrance
+lot(-200, -96, 112, 158, null, false, false);                 // 24 — west part, up to the McDonald's road
+lot(-88, 15, 112, 158, null, false, false);                   // 24 — between the McDonald's road and the main entrance
 road(-96, -88, 104, 190);                                     // road past McDonald's, from the cross road to the ring road
-lot(35, 286, 112, 165, [41, 51], false);                      // 24 — east of the main entrance
+lot(35, 286, 112, 158, [41, 51], false, false);               // 24 — east of the main entrance
+road(-206, 292, 158, 165);                                    // front service road along the whole pad row, hotel to car wash
+for (let x = -200; x < 288; x += 8) flat(x, x + 4, 161.4, 161.6, white, .17);
 lot(-136, -96, 165, 190, null, false, false);                 // pad row between the hotel and the McDonald's road
 lot(-40, 15, 165, 190, null, false, false);                   // pad row between McDonald's and the main entrance, same grid
 lot(-282, -142, -138, -97, null, false, false, .27);          // behind Gym & Padel, off the north ring road
