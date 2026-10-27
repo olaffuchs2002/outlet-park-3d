@@ -769,7 +769,8 @@ const RING10 = insetSite(10), westX = z => RING10[4][0] + (RING10[0][0] - RING10
 // north row, raised behind a kerb, cut back along the verge of the west ring road
 const NORTH_ROW = [[westX(-140), -140], RING10[1], [RING10[1][0] + (RING10[2][0] - RING10[1][0]) * 78 / (RING10[2][1] - RING10[1][1]), -62], [westX(-62), -62]];   // out to the diagonal ring road, round Fly Park
 { const sh = new THREE.Shape(NORTH_ROW.map(([x, z]) => new THREE.Vector2(x, -z)));
-  sh.holes.push(new THREE.Path([[-274, -139.9], [-142, -139.9], [-142, -97], [-274, -97]].map(([x, z]) => new THREE.Vector2(x, -z))));   // the Gym & Padel car park sits at road level
+  sh.holes.push(new THREE.Path([[-274, -139.9], [-142, -139.9], [-142, -97], [-274, -97]].map(([x, z]) => new THREE.Vector2(x, -z))));
+  sh.holes.push(new THREE.Path([[-138, -139.9], [-68, -139.9], [-68, -70.1], [-138, -70.1]].map(([x, z]) => new THREE.Vector2(x, -z))));   // car park between Gym & Padel and the park, also at road level   // the Gym & Padel car park sits at road level
   const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: .25, bevelEnabled: false }), [pave, pave]); m.rotation.x = -Math.PI / 2; m.receiveShadow = true; scene.add(m); }
 flat(westX(-62) + .5, 178, -67, -62, pavePink, 0.3);
 // main entrance from S8 and the north-east access road
@@ -938,7 +939,8 @@ lotCol(-205, 165, 182);                                       // one row in the 
 { const P = [[westX(165), 165], [-200, 165], [-200, 190], [westX(190), 190]]; flatShape(P, asphalt, .1); pavedFns.push((x, z) => inPoly(x, z, P)); }   // asphalt up to the ring road, no grass sliver
 lot(-40, 15, 165, 190, null, false, false);                   // pad row between McDonald's and the main entrance, same grid
 lotCol(-45, 166, 190);                                        // row beside McDonald's garden, facing that car park's first aisle
-lot(-274, -142, -142.5, -97, null, false, false);        // behind Gym & Padel, its row-end islands right at the north ring road
+lot(-274, -142, -142.5, -97, null, false, false);
+lot(-138, -68, -142.5, -70, null, false, false);              // between Gym & Padel and the park, off the north ring road        // behind Gym & Padel, its row-end islands right at the north ring road
 // strip along the west ring road, on the same column grid as car park 6 above it; a wide aisle and the sidewalk along the buildings
 { const P = [[westX(-24), -24], [-223, -24], [-223, 104], [westX(104), 104]]; flatShape(P, asphalt, .09); pavedFns.push((x, z) => inPoly(x, z, P)); }   // asphalt up to the divider
 lotCol(-244, -24, 30);                                        // outer half-column, as far as the divider allows
@@ -975,10 +977,10 @@ lot(-196, -112, 82, 104, null, false, false);            // in front of Kaufland
   bldg(g, -250, -140, -95, -67, 13, { fit: FIT, levels: 2, wall: '#3d434d', faces: ['s'], text: 'GYM & PADEL', signBg: '#8c5ec8', hvac: false });
 }
 // 18 children's playground (about 4 000 m²), in the middle of one park between Gym & Padel and Fly Park, reached by paved alleys
-const PARK = [-134, 21, -140, -70];
+const PARK = [-68, 21, -140, -70];                                    // narrower, towards Fly Park; the car park west of it took the rest
 { const [px1, px2, pz1, pz2] = PARK, grass = T('#7fa85a', TX.grass), path = T('#d8cfc2', TX.slab);
   flat(px1, px2, pz1, pz2, grass, 0.3);
-  const X1 = -87.5, X2 = -25.5, Z1 = -137, Z2 = -73, cxp = (X1 + X2) / 2, czp = (Z1 + Z2) / 2;
+  const X1 = -54.5, X2 = 7.5, Z1 = -137, Z2 = -73, cxp = (X1 + X2) / 2, czp = (Z1 + Z2) / 2;
   // alleys: a loop round the playground and four paths out to the park's edges
   flat(X1 - 6, X2 + 6, Z1 - 1, Z1 + 0, path, .32); flat(X1 - 6, X2 + 6, Z2, Z2 + 3, path, .32);
   flat(X1 - 6, X1 - 3, Z1 - 1, Z2 + 3, path, .32); flat(X2 + 3, X2 + 6, Z1 - 1, Z2 + 3, path, .32);
@@ -1627,7 +1629,7 @@ const CAR_COLS = ['#f2f2ef', '#f2f2ef', '#c4c7ca', '#9ea3a8', '#2a2d31', '#1c1e2
     const b = SITE[(i + 1) % SITE.length], s = inward(a, b), len = Math.hypot(b[0] - a[0], b[1] - a[1]);
     const nx = -(b[1] - a[1]) / len * s, nz = (b[0] - a[0]) / len * s;
     for (let d = 15; d < len - 10; d += 35) { const x = a[0] + (b[0] - a[0]) * d / len + nx * 14.5, z = a[1] + (b[1] - a[1]) * d / len + nz * 14.5;
-      if (!(x > -252 && x < -224 && z > -26 && z < 74) && !(x > -225 && x < -199 && z > 110 && z < 160) && !(x > -63 && x < -44 && z > 165 && z < 191)) pts.push([x, z]); }   // nor in McDonald's garden   // none on the stall columns in the west wedges
+      if (!(x > -252 && x < -224 && z > -26 && z < 74) && !(x > -225 && x < -199 && z > 110 && z < 160) && !(x > -63 && x < -44 && z > 165 && z < 191) && !lotRects.some(([a, b, c, d]) => x > a - 1 && x < b + 1 && z > c - 1 && z < d + 1)) pts.push([x, z]); }   // and none standing in a car park   // nor in McDonald's garden   // none on the stall columns in the west wedges
   });
   for (let x = -250; x < 210; x += 30) { pts.push([x, -61.6]); pts.push([x, -25.4]); }
   for (let x = -195; x < 280; x += 30) if (Math.abs(x) > 12) { pts.push([x, 104.3]); if (x > -184 && x !== -45) pts.push([x, 165.5]); }
