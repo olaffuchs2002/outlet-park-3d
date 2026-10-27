@@ -844,6 +844,7 @@ const hedge = (x1, x2, z, y = .25, step = 1.6) => { for (let x = x1; x < x2; x +
 
 // ---------- parking lots ----------
 const cars = []; let stalls = 0;
+const markMat = tex => new THREE.MeshStandardMaterial({ map: tex, transparent: true, depthWrite: false, roughness: .9 });   // painted lines only, the asphalt shows through
 const islands = [];                                       // kerbed planted noses at the ends of the parking rows
 const bollards = [];
 const evSpots = [], evTags = [];                         // EV charging posts and their labels, placed by the car parks
@@ -863,8 +864,6 @@ function lot(x1, x2, z1, z2, ev = null, topAisle = true, bottomAisle = true, ly 
   const isEV = cx => ev && cx >= ev[0] && cx + 10 <= ev[1] + .01;
   const zs = []; for (let z = za; z + 2.5 <= zb + .01; z += 2.5) zs.push(z);
   const tex = canvasTex(cw, ch, (c) => {
-    c.fillStyle = '#575b5f'; c.fillRect(0, 0, cw, ch);
-    speckle(c, cw, ch, cw * ch / 12, ['#52565a', '#5e6266', '#5a5e62'], .6, 1, 2);
     for (const [cx, first] of cols) if (first) {
       if (isEV(cx)) { c.fillStyle = '#3f8d5c'; c.fillRect((cx - x1) * S, (za - z1) * S, 10 * S, (zb - za) * S); }
       else { c.fillStyle = '#6f8f4a'; c.fillRect((cx + 4.6 - x1) * S, (za - z1) * S, .8 * S, (zb - za) * S); }
@@ -873,7 +872,7 @@ function lot(x1, x2, z1, z2, ev = null, topAisle = true, bottomAisle = true, ly 
     for (const [cx] of cols) for (const z of zs.concat([zs[zs.length - 1] + 2.5])) { const py = (z - z1) * S; c.moveTo((cx - x1) * S, py); c.lineTo((cx + 5 - x1) * S, py); }
     c.stroke();
   });
-  flat(x1, x2, z1, z2, M('#ffffff', { map: tex, roughness: .95 }), ly);
+  flat(x1, x2, z1, z2, asphalt, ly); flat(x1, x2, z1, z2, markMat(tex), ly + .005);   // same asphalt as the roads, markings on top
   solids.push([x1, x2, z1, z2]); paved.push([x1, x2, z1, z2]);
   for (const [cx, first] of cols) {
     for (const z of zs) { stalls++; if (rnd() < .74) cars.push([cx + 2.5 + rr(-.12, .12), z + 1.25, first ? Math.PI / 2 : -Math.PI / 2, ly]); }
@@ -888,13 +887,11 @@ function lotRow(x1, x2, z1, ly = .27) {
   const S = 6, cw = Math.round((x2 - x1) * S), ch = 5 * S, xs = [];
   for (let x = x1; x + 2.5 <= x2 + .01; x += 2.5) xs.push(x);
   const tex = canvasTex(cw, ch, (c) => {
-    c.fillStyle = '#575b5f'; c.fillRect(0, 0, cw, ch);
-    speckle(c, cw, ch, cw * ch / 12, ['#52565a', '#5e6266', '#5a5e62'], .6, 1, 2);
     c.strokeStyle = 'rgba(245,245,240,.85)'; c.lineWidth = 1.2; c.beginPath();
     for (const x of xs.concat([xs[xs.length - 1] + 2.5])) { c.moveTo((x - x1) * S, 0); c.lineTo((x - x1) * S, ch); }
     c.stroke();
   });
-  flat(x1, x2, z1, z1 + 5, M('#ffffff', { map: tex, roughness: .95 }), ly);
+  flat(x1, x2, z1, z1 + 5, asphalt, ly); flat(x1, x2, z1, z1 + 5, markMat(tex), ly + .005);
   xs.forEach(x => { stalls++; if (rnd() < .74) cars.push([x + 1.25, z1 + 2.5, rnd() < .5 ? 0 : Math.PI, ly]); });
   solids.push([x1, x2, z1, z1 + 5]);
 }
@@ -904,13 +901,11 @@ function lotCol(x1, z1, z2, west = false, ly = .14) {
   for (let z = z1 + 1.5; z + 2.5 <= z2 - 1.5 + .01; z += 2.5) zs.push(z);
   islands.push([x1 + .15, x1 + 4.85, z1 + .2, z1 + 1.35], [x1 + .15, x1 + 4.85, zs[zs.length - 1] + 2.65, zs[zs.length - 1] + 3.8]);
   const tex = canvasTex(cw, ch, (c) => {
-    c.fillStyle = '#575b5f'; c.fillRect(0, 0, cw, ch);
-    speckle(c, cw, ch, cw * ch / 12, ['#52565a', '#5e6266', '#5a5e62'], .6, 1, 2);
     c.strokeStyle = 'rgba(245,245,240,.85)'; c.lineWidth = 1.2; c.beginPath();
     for (const z of zs.concat([zs[zs.length - 1] + 2.5])) { c.moveTo(0, (z - z1) * S); c.lineTo(cw, (z - z1) * S); }
     c.stroke();
   });
-  flat(x1, x1 + 5, z1, z2, M('#ffffff', { map: tex, roughness: .95 }), ly);
+  flat(x1, x1 + 5, z1, z2, asphalt, ly); flat(x1, x1 + 5, z1, z2, markMat(tex), ly + .005);
   zs.forEach(z => { stalls++; if (rnd() < .74) cars.push([x1 + 2.5 + rr(-.12, .12), z + 1.25, west ? Math.PI / 2 : -Math.PI / 2, ly]); });
   solids.push([x1, x1 + 5, z1, z2]); paved.push([x1, x1 + 5, z1, z2]);
 }
