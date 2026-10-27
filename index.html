@@ -770,9 +770,9 @@ const RING10 = insetSite(10), westX = z => RING10[4][0] + (RING10[0][0] - RING10
 const GYM_LOTS = [[westX(-139.9) + .1, -139.9], [-142, -139.9], [-142, -97], [-250.1, -97], [-250.1, -62.1], [westX(-62.1) + .1, -62.1]];
 // north row, raised behind a kerb, cut back along the verge of the west ring road
 const NORTH_ROW = [[westX(-140), -140], RING10[1], [RING10[1][0] + (RING10[2][0] - RING10[1][0]) * 78 / (RING10[2][1] - RING10[1][1]), -62], [westX(-62), -62]];   // out to the diagonal ring road, round Fly Park
-{ const sh = new THREE.Shape(NORTH_ROW.map(([x, z]) => new THREE.Vector2(x, -z)));
-  sh.holes.push(new THREE.Path(GYM_LOTS.map(([x, z]) => new THREE.Vector2(x, -z))));   // car parks behind and west of Gym & Padel sit at road level
-  sh.holes.push(new THREE.Path([[-138, -139.9], [-68, -139.9], [-68, -70.1], [-138, -70.1]].map(([x, z]) => new THREE.Vector2(x, -z))));   // car park between Gym & Padel and the park, also at road level   // the Gym & Padel car park sits at road level
+// the paved slab itself is traced round the car parks (no holes), so no strips of paving are left between them
+{ const SLAB = [[-68, -140], RING10[1], NORTH_ROW[2], [-250.1, -62], [-250.1, -97], [-142, -97], [-142, -70], [-68, -70]];
+  const sh = new THREE.Shape(SLAB.map(([x, z]) => new THREE.Vector2(x, -z)));
   const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: .25, bevelEnabled: false }), [pave, pave]); m.rotation.x = -Math.PI / 2; m.receiveShadow = true; scene.add(m); }
 flat(westX(-62) + .5, 178, -67, -62, pavePink, 0.3);
 // main entrance from S8 and the north-east access road
@@ -1002,7 +1002,7 @@ flatShape(GYM_LOTS, asphalt, .09); pavedFns.push((x, z) => inPoly(x, z, GYM_LOTS
 lot(-274, -142, -142.5, -97, null, false, false);
 lotCol(-268, -97, -62, true); lotCol(-263, -97, -62);         // west of Gym & Padel: the first double column of the car park behind it, carried on
 box(scene, -252, -250, -97, -62, .25, pave, 0, false); paved.push([-252, -250, -97, -62]);   // thin sidewalk along Gym & Padel's west wall
-lot(-138, -68, -142.5, -70, null, false, false);              // between Gym & Padel and the park, off the north ring road        // behind Gym & Padel, its row-end islands right at the north ring road
+lot(-142, -68, -142.5, -70, null, false, false);              // between Gym & Padel and the park, off the north ring road        // behind Gym & Padel, its row-end islands right at the north ring road
 // strip along the west ring road, on the same column grid as car park 6 above it; a wide aisle and the sidewalk along the buildings
 { const P = [[westX(-24), -24], [-223, -24], [-223, 104], [westX(104), 104]]; flatShape(P, asphalt, .09); pavedFns.push((x, z) => inPoly(x, z, P)); }   // asphalt up to the divider
 lotCol(-244, -24, 30);                                        // outer half-column, as far as the divider allows
@@ -1063,7 +1063,6 @@ const PARK = [-68, 21, -140, -70];                                    // narrowe
   flat(X1 + 4, X1 + 18, Z1 + 4, Z1 + 18, M('#4aa35a'), 0.36, g); flat(X2 - 16, X2 - 4, Z2 - 16, Z2 - 4, M('#2fa5d8'), 0.36, g);
   const cols = ['#e5493a', '#f2c12e', '#36a852', '#2fa5d8', '#9c55c9'];
   for (let i = 0; i < 16; i++) { const x = rr(X1 + 3, X2 - 6), z = rr(Z1 + 3, Z2 - 6), sz = rr(1.5, 4); box(g, x, x + sz, z, z + sz * .7, rr(.8, 3.5), M(pickOf(cols)), .3); }
-  [[X1 + 22, Z1 + 20], [X2 - 10, Z1 + 6]].forEach(([x, z]) => { const sl = box(g, x, x + 2, z, z + 10, .3, M('#f2c12e'), 1.9); sl.rotation.x = .35; });
   const fence = M('#5b5f62');
   box(g, X1, X2, Z1 - .2, Z1, 1.1, fence, .3, false); box(g, X1, cxp - 3, Z2, Z2 + .2, 1.1, fence, .3, false); box(g, cxp + 3, X2, Z2, Z2 + .2, 1.1, fence, .3, false);   // gate facing the square
   box(g, X1 - .2, X1, Z1, Z2, 1.1, fence, .3, false); box(g, X2, X2 + .2, Z1, Z2, 1.1, fence, .3, false);
