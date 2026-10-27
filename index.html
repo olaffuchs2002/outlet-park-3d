@@ -799,7 +799,8 @@ road(19, 31, 112, 190);                                                    // in
   for (let z = 104.6; z < 111.5; z += 1.1) { flat(15.3, 18.7, z, z + .55, white, .17); flat(31.3, 34.7, z, z + .55, white, .17); }   // zebras over the cross road, in line with the sidewalks
 }
 const NE_ROAD = [];
-{ const p0 = [214, -96], p1 = [330, -170], p2 = [430, -430];
+roadRects.push([196, 216, -99, -78]);                         // the divider opens where the access road joins the ring
+{ const p0 = [205.5, -86.5], p1 = [330, -170], p2 = [430, -430];   // starts on the ring road itself
   for (let t = 0; t <= 1.0001; t += 1 / 14) NE_ROAD.push([(1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * p1[0] + t * t * p2[0], (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * p1[1] + t * t * p2[1]]);
   NE_ROAD.push([560, -1100]);
   for (let i = 0; i < NE_ROAD.length - 1; i++) strip(NE_ROAD[i], NE_ROAD[i + 1], 9, asphalt, 0.1, 4);
@@ -1110,14 +1111,26 @@ const PARK = [-68, 21, -140, -70];                                    // narrowe
   const planterMat = M('#3a4046', { metalness: .4, roughness: .5 }), seat = M('#b5895c', { roughness: .8 });
   [['1B', 93], ['2B', 0], ['3B', -93]].forEach(([n, lz]) => {
     flat(-12.5, 12.5, lz - 32.5, lz + 32.5, pave, 0.06, g);                   // paved apron round the building
-    flat(12.5, 21, lz - 9, lz + 9, pave, 0.065, g);                           // entrance plaza facing the park
-    flat(21, 25.5, lz - 2, lz + 2, pave, 0.065, g);                           // path on to the ring road
+    flat(12.5, 18.5, lz - 9, lz + 9, pave, 0.065, g);                         // entrance plaza facing the park
+    // the building's own car park: one row of stalls along the front, an aisle beside the ring road, open to it at both ends
+    const setts = T('#b9b2a8', TX.slab), mark = M('#6f6a63', { roughness: .9 });   // paved forecourt with stalls marked in dark stone
+    flat(12.5, 25.6, lz - 34, lz + 34, setts, 0.07, g);
+    flat(18.5, 25.6, lz - 2.5, lz - 2.2, mark, .08, g); flat(18.5, 25.6, lz + 2.2, lz + 2.5, mark, .08, g);   // marked crossing to the entrance
+    [[-32.5, -9.5], [9.5, 32.5]].forEach(([a, b]) => {
+      for (let z = lz + a; z <= lz + b + .01; z += 2.5) flat(13.5, 18.5, z - .1, z + .1, mark, .08, g);   // stall lines
+      for (let z = lz + a; z + 2.5 <= lz + b + .01; z += 2.5) { stalls++; if (rnd() < .8) { const [x, wz] = toWorld(16, z + 1.25); cars.push([x, wz, Math.PI / 2 + th, .07]); } }
+    });
+    [lz - 34, lz + 28].forEach(z0 => { const P = [toWorld(18.5, z0), toWorld(30, z0), toWorld(30, z0 + 6), toWorld(18.5, z0 + 6)]; pavedFns.push((x, z) => inPoly(x, z, P)); });   // openings in the kerb
     [-6, 6].forEach(dz => {                                                    // low planters and benches either side of the entrance
       box(g, 14.5, 18.5, lz + dz - 2, lz + dz + 2, .5, planterMat, 0, false);
       box(g, 19.2, 19.7, lz + dz - 1.5, lz + dz + 1.5, .45, seat, 0, false);
     });
     for (let d = -28; d <= 28; d += 8) { const [x, z] = toWorld(-16, lz + d); tree(x, z, rr(.95, 1.15), 1); }   // trees along the back only, the front stays open to the park
     if (lz > -93) for (let lx = -8; lx <= 8; lx += 8) for (const d of [-41, -52]) { const [x, z] = toWorld(lx, lz + d); tree(x, z, rr(.95, 1.2), 1); }   // trees in the gaps between the buildings
+    if (lz > -93) {                                                          // small garden between the buildings: a paved path with benches under the trees
+      flat(-12.5, 12.5, lz - 47.5, lz - 45.5, pave, .065, g);
+      for (const lx of [-8, 0, 8]) [[lz - 44.6, 0], [lz - 48.4, Math.PI]].forEach(([bz, r]) => { box(g, lx - 1, lx + 1, bz - .25, bz + .25, .08, seat, .42); box(g, lx - .9, lx + .9, bz - .2, bz + .2, .42, planterMat, 0, false); });
+    }
     const n0 = solids.length;
     const ob = bldg(g, -10, 10, lz - 30, lz + 30, 11.5, { fit: FIT, facade: 'wood', levels: 3, noAO: true, faces: ['n', 's', 'e', 'w'], canopy: false });
     solids.length = n0;                                                        // bldg records local coordinates; record the turned footprint instead
@@ -1584,7 +1597,7 @@ paved.push([-199, 256, -24, 78], [-196, 256, 78, 104], [-200, 290, 165, 190], [-
   ring(SITE, -1); ring(RING_IN, 1);
   // low concrete divider along the inner side of the ring road, 8 m in, open wherever a road or aisle crosses it, with rounded ends
   { const D = insetSite(8.3), w = .6, h = .12, open = (x, z, across) => roadRects.some(([a, b, c, d]) => x > a - 1.2 && x < b + 1.2 && z > c - 1.2 && z < d + 1.2)
-      || across && lotRects.some(([a, b, c, d]) => x > a && x < b && z > c - 3.5 && z < d + 3.5);   // no thin divider in front of row-end islands
+      || across && lotRects.some(([a, b, c, d]) => x > a && x < b && z > c - .4 && z < d + .4);   // only where a car park actually runs over the divider line
     const caps = [];
     D.forEach((a, i) => {
       const b = D[(i + 1) % D.length], len = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.round(len); let start = -1;
@@ -1659,6 +1672,7 @@ SITE.forEach((a, i) => {
   for (let d = 4; d < len - 4; d += 8) {
     const x = a[0] + (b[0] - a[0]) * d / len - nx * 7, z = a[1] + (b[1] - a[1]) * d / len - nz * 7;
     if (z > 205 || (x > -219 && x < -189) || Math.abs(x - 25) < 14 || lineDist(x, z, NE_ROAD, false) < 9) continue;
+    if (i === 4 && z > -125 && z < 140) continue;                     // the offices' own car parks take this stretch
     tree(x, z, rr(1, 1.4));
   }
 });
