@@ -1013,12 +1013,12 @@ strip([-66, -110], [21, -99], 3, pave, 0.33);
     flat(-12.5, 12.5, lz - 32.5, lz + 32.5, pave, 0.06, g);                   // paved apron round the building
     flat(12.5, 21, lz - 9, lz + 9, pave, 0.065, g);                           // entrance plaza facing the park
     flat(21, 25.5, lz - 2, lz + 2, pave, 0.065, g);                           // path on to the ring road
-    [-6, 6].forEach(dz => {                                                    // planters with trees and benches either side of the entrance
+    [-6, 6].forEach(dz => {                                                    // low planters and benches either side of the entrance
       box(g, 14.5, 18.5, lz + dz - 2, lz + dz + 2, .5, planterMat, 0, false);
       box(g, 19.2, 19.7, lz + dz - 1.5, lz + dz + 1.5, .45, seat, 0, false);
-      const [x, z] = toWorld(16.5, lz + dz); tree(x, z, .9, 1);
     });
-    for (let d = -28; d <= 28; d += 8) [-16, 16].forEach(lx => { if (lx > 0 && Math.abs(d) < 12) return; const [x, z] = toWorld(lx, lz + d); tree(x, z, rr(.95, 1.15), 1); });   // tree avenues along both long sides
+    for (let d = -28; d <= 28; d += 8) { const [x, z] = toWorld(-16, lz + d); tree(x, z, rr(.95, 1.15), 1); }   // trees along the back only, the front stays open to the park
+    if (lz > -93) for (let lx = -8; lx <= 8; lx += 8) for (const d of [-41, -52]) { const [x, z] = toWorld(lx, lz + d); tree(x, z, rr(.95, 1.2), 1); }   // trees in the gaps between the buildings
     const n0 = solids.length;
     const ob = bldg(g, -10, 10, lz - 30, lz + 30, 11.5, { fit: FIT, facade: 'glass', levels: 3, noAO: true, faces: ['n', 's', 'e', 'w'], canopy: false });
     solids.length = n0;                                                        // bldg records local coordinates; record the turned footprint instead
