@@ -936,7 +936,8 @@ road(westX(-58) - 2, -255, -61, -55); road(westX(-28) - 2, -255, -31, -25);   //
    [[228, -25], RING10[2], [eastX(104), 104], [256, 104], [256, -24], [228, -24]],                              // along the east ring road
    [[286, zAt(eastX, 286, 104, 190)], [eastX(190), 190], [286, 190]]                                              // by the car wash
   ].forEach(P => { flatShape(P, asphalt, .09); pavedFns.push((x, z) => inPoly(x, z, P)); });
-  lotCol(269, 40, 104, true);                                  // row along the east road, facing an aisle beside Dom i Ogród that opens onto the cross road
+  lotCol(271, 52, 104, true);                                  // row along the east road, facing an aisle beside Dom i Ogród that opens onto the cross road
+  box(scene, 262, 264.8, 7, 104, .15, pave, .1, false); box(scene, 264.8, 265, 7, 104, .17, M('#8d8f8f', { roughness: .8 }), .1, false); paved.push([262, 265, 7, 104]);   // thin kerbed sidewalk along its east wall
 }
 lot(-198, -112, 82, 104, null, false, false, .27);            // in front of Kaufland, off the cross road
 
@@ -1016,8 +1017,7 @@ strip([-66, -110], [21, -99], 3, pave, 0.33);
 // 7 Lidl, 8 Dom i Ogród
 { const g = bgroup('b7'); bldg(g, 165, 215, -18, 7, 8, { fit: FIT, faces: ['n', 'w'], text: 'LIDL', signW: 10, signBg: '#1f4fa0', signFg: '#f2d72a' }); }
 { const g = bgroup('b8');
-  const dg = bldg(g, 165, 262, 7, 100, 10, { fit: FIT, wall: '#c9d3c6', faces: ['w', 's'], text: 'DOM I OGRÓD', signBg: '#5f9a48' });
-  box(g, dg.x2 + 1.5, dg.x2 + 4, dg.z1 + 25, dg.z1 + 65, 2.4, M('#7d8a77', { transparent: true, opacity: .5 }), 0, false);
+  bldg(g, 165, 262, 7, 100, 10, { fit: FIT, wall: '#c9d3c6', faces: ['w', 's'], text: 'DOM I OGRÓD', signBg: '#5f9a48' });
 }
 // 17 Rynek
 { const g = bgroup('rynek');
