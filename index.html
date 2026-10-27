@@ -884,7 +884,7 @@ function lot(x1, x2, z1, z2, ev = null, topAisle = true, bottomAisle = true, ly 
   }
 }
 // single row of 5 m stalls entered straight from a road or an aisle, along x
-function lotRow(x1, x2, z1, ly = .27) {
+function lotRow(x1, x2, z1, ly = .27, rot = null) {
   const S = 6, cw = Math.round((x2 - x1) * S), ch = 5 * S, xs = [];
   for (let x = x1; x + 2.5 <= x2 + .01; x += 2.5) xs.push(x);
   const tex = canvasTex(cw, ch, (c) => {
@@ -893,8 +893,9 @@ function lotRow(x1, x2, z1, ly = .27) {
     c.stroke();
   });
   flat(x1, x2, z1, z1 + 5, asphalt, ly); flat(x1, x2, z1, z1 + 5, markMat(tex), ly + .005);
-  xs.forEach(x => { stalls++; if (rnd() < .74) cars.push([x + 1.25, z1 + 2.5, rnd() < .5 ? 0 : Math.PI, ly]); });
-  solids.push([x1, x2, z1, z1 + 5]);
+  xs.forEach(x => { stalls++; if (rnd() < .74) cars.push([x + 1.25, z1 + 2.5, rot ?? (rnd() < .5 ? 0 : Math.PI), ly]); });
+  solids.push([x1, x2, z1, z1 + 5]); paved.push([x1, x2, z1, z1 + 5]); lotRects.push([x1, x2, z1, z1 + 5]);
+  islands.push([x1 - 1.3, x1 - .15, z1 + .15, z1 + 4.85, ly], [x2 + .15, x2 + 1.3, z1 + .15, z1 + 4.85, ly]);
 }
 // single column of 5 m stalls along z, entered from the aisle on its east side (west = true: on its west side)
 function lotCol(x1, z1, z2, west = false, ly = .14) {
@@ -910,13 +911,13 @@ function lotCol(x1, z1, z2, west = false, ly = .14) {
   zs.forEach(z => { stalls++; if (rnd() < .74) cars.push([x1 + 2.5 + rr(-.12, .12), z + 1.25, west ? Math.PI / 2 : -Math.PI / 2, ly]); });
   solids.push([x1, x1 + 5, z1, z2]); paved.push([x1, x1 + 5, z1, z2]); lotRects.push([x1, x1 + 5, z1, z2]);
 }
-lot(-255, 228, -61, -24, [-57, -47]);                        // 6 — north parking, aisles of equal width along both long sides                        // 6 — north parking, up to the north-east road
+lot(-255, 231, -61, -24, [-57, -47]);                        // 6 — north parking, aisles of equal width along both long sides                        // 6 — north parking, up to the north-east road
 // north-east corner: asphalt up to the diagonal ring road instead of grass, two more short columns and a link road out to the ring
 { const P = [[228, -61], [RING10[1][0] + (RING10[2][0] - RING10[1][0]) * (79 / (RING10[2][1] - RING10[1][1])), -61], RING10[2], [262.5, -24], [228, -24]];
   flatShape(P, asphalt, .09); pavedFns.push((x, z) => inPoly(x, z, P)); }
 road(225, 236, -61, -55);                                     // car park 6's north aisle out to the ring road
-lot(225, 247, -50, -24, null, false, false, .145);            // aisle and double column in the corner
-lotCol(247, -36, -24, true);                                  // and a short row facing the next aisle
+road(231, 263, -30, -24);                                     // link road along Lidl's delivery yard, from car park 6 out to the east ring road
+lotRow(232.5, 255, -35, .14, 0); lotRow(232.5, 250, -40, .14, Math.PI);   // two rows back to back: one off the link road, one off the aisle above
 lot(-200, 15, 112, 158, null, false, false);                  // 24 — west part, one grid from the hotel side to the main entrance
 lotCol(-205, 112, 158);                                       // extra column in the grass wedge by the west ring road, facing car park 24's first aisle
 lotCol(-210, 112, 158, true);   // asphalt, not grass, past the end of the row                                 // and one more facing west, onto an aisle in the wedge, kept off the verge
@@ -1026,6 +1027,8 @@ strip([-66, -110], [21, -99], 3, pave, 0.33);
 // Lidl delivery yard on the east side: asphalt apron, yellow hatching and bay lines, an articulated lorry at the dock
 { const yard = M('#4f5357', { roughness: .95 }), yellow = M('#f2c12e', { roughness: .7 });
   flat(215, 255, -23, 6, asphalt, .26);
+  box(scene, 233, 255, -24.2, -23, .26, asphalt, 0, false);                                        // wide drive-in from the link road onto the yard
+  roadRects.push([233, 255, -26, -22]);
   for (let z = -20; z <= 4; z += 8) flat(215.5, 232, z - .08, z + .08, yellow, .27);                   // dock bay lines
   for (let x = 236; x < 254; x += 1.6) flat(x, x + .5, -22, -16, yellow, .27);                          // keep-clear hatching
   const lorry = new THREE.Group(), white2 = M('#eef0f0', { roughness: .5 }), dark = M('#2b3036', { roughness: .6 }), blue = M('#1f4fa0', { roughness: .5 });
