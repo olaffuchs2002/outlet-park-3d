@@ -769,7 +769,7 @@ function ringBand(dOut, dIn, mat, y) {
 ringBand(0, 10, asphalt, 0.1);
 // main entrance from S8 and the north-east access road
 const road = (x1, x2, z1, z2) => flat(x1, x2, z1, z2, asphalt, 0.1);
-road(-205, -191, 196, 226); road(-300, -100, 219, 226);                   // second entry and exit from S8, beyond the hotel, with slip lanes
+road(-210, -196, 196, 226); road(-300, -100, 219, 226);                   // second entry and exit from S8, at the south-west corner, with slip lanes
 road(19, 31, 190, 226); road(-55, 105, 219, 226);                           // main entry and exit in the middle of the frontage
 road(-226, 287, 104, 112);                                                // road across the park, from the west to the east ring road
 road(19, 31, 112, 190);                                                    // internal road between the two halves of car park 24
@@ -793,7 +793,7 @@ function arrow(x, z, rot) {
   const m = new THREE.Mesh(new THREE.ShapeGeometry(s), white);
   m.rotation.x = -Math.PI / 2; m.rotation.z = rot; m.position.set(x, 0.17, z); scene.add(m);
 }
-arrow(-201.5, 212, 0); arrow(-194.5, 205, Math.PI); arrow(22, 212, 0); arrow(28, 205, Math.PI);
+arrow(-206.5, 212, 0); arrow(-199.5, 205, Math.PI); arrow(22, 212, 0); arrow(28, 205, Math.PI);
 for (let x = 19.6; x < 30.5; x += 1.1) { flat(x, x + .55, 166, 170.5, white, 0.17); flat(x, x + .55, 113, 117.5, white, 0.17); }   // zebras across the access road at both junctions
 
 // ---------- S8 ----------
@@ -865,14 +865,31 @@ function lotRow(x1, x2, z1, ly = .27) {
   xs.forEach(x => { stalls++; if (rnd() < .74) cars.push([x + 1.25, z1 + 2.5, rnd() < .5 ? 0 : Math.PI, ly]); });
   solids.push([x1, x2, z1, z1 + 5]);
 }
+// single column of 5 m stalls along z, entered from the aisle on its east side
+function lotCol(x1, z1, z2, ly = .14) {
+  const S = 6, cw = 5 * S, ch = Math.round((z2 - z1) * S), zs = [];
+  for (let z = z1; z + 2.5 <= z2 + .01; z += 2.5) zs.push(z);
+  const tex = canvasTex(cw, ch, (c) => {
+    c.fillStyle = '#575b5f'; c.fillRect(0, 0, cw, ch);
+    speckle(c, cw, ch, cw * ch / 12, ['#52565a', '#5e6266', '#5a5e62'], .6, 1, 2);
+    c.strokeStyle = 'rgba(245,245,240,.85)'; c.lineWidth = 1.2; c.beginPath();
+    for (const z of zs.concat([zs[zs.length - 1] + 2.5])) { c.moveTo(0, (z - z1) * S); c.lineTo(cw, (z - z1) * S); }
+    c.stroke();
+  });
+  flat(x1, x1 + 5, z1, z2, M('#ffffff', { map: tex, roughness: .95 }), ly);
+  zs.forEach(z => { stalls++; if (rnd() < .74) cars.push([x1 + 2.5 + rr(-.12, .12), z + 1.25, -Math.PI / 2, ly]); });
+  solids.push([x1, x1 + 5, z1, z2]);
+}
 lot(-255, 228, -61, -25, [-57, -47]);                        // 6 — north parking, up to the north-east road
 lot(-200, 15, 112, 158, null, false, false);                  // 24 — west part, one grid from the hotel side to the main entrance
 lot(35, 286, 112, 158, [41, 51], false, false);               // 24 — east of the main entrance
 road(-206, 292, 158, 165);                                    // front service road along the whole pad row, hotel to car wash
 lot(-136, -92, 165, 190, null, false, false);                 // pad row between the hotel and McDonald's
+lot(-207, -185, 165, 190, null, false, false);                // west of the hotel, off the service road and the ring road
 lot(-40, 15, 165, 190, null, false, false);                   // pad row between McDonald's and the main entrance, same grid
 lot(-282, -142, -138, -97, null, false, false, .27);          // behind Gym & Padel, off the north ring road
 lot(-226, -206, -20, 104, null, false, false);                // strip along the west ring road, off the cross road
+lotCol(-231, -20, 72);                                        // extra column in the grass wedge by the west ring road, facing the strip's aisle
 lot(-198, -112, 82, 104, null, false, false, .27);            // in front of Kaufland, off the cross road
 
 // ---------- buildings ----------
@@ -1332,7 +1349,7 @@ SITE.forEach((a, i) => {
   const nx = -(b[1] - a[1]) / len * s, nz = (b[0] - a[0]) / len * s;
   for (let d = 4; d < len - 4; d += 8) {
     const x = a[0] + (b[0] - a[0]) * d / len - nx * 7, z = a[1] + (b[1] - a[1]) * d / len - nz * 7;
-    if (z > 205 || (x > -214 && x < -184) || Math.abs(x - 25) < 14 || lineDist(x, z, NE_ROAD, false) < 9) continue;
+    if (z > 205 || (x > -219 && x < -189) || Math.abs(x - 25) < 14 || lineDist(x, z, NE_ROAD, false) < 9) continue;
     tree(x, z, rr(1, 1.4));
   }
 });
@@ -1404,10 +1421,11 @@ const CAR_COLS = ['#f2f2ef', '#f2f2ef', '#c4c7ca', '#9ea3a8', '#2a2d31', '#1c1e2
   SITE.forEach((a, i) => {
     const b = SITE[(i + 1) % SITE.length], s = inward(a, b), len = Math.hypot(b[0] - a[0], b[1] - a[1]);
     const nx = -(b[1] - a[1]) / len * s, nz = (b[0] - a[0]) / len * s;
-    for (let d = 15; d < len - 10; d += 35) pts.push([a[0] + (b[0] - a[0]) * d / len + nx * 14.5, a[1] + (b[1] - a[1]) * d / len + nz * 14.5]);
+    for (let d = 15; d < len - 10; d += 35) { const x = a[0] + (b[0] - a[0]) * d / len + nx * 14.5, z = a[1] + (b[1] - a[1]) * d / len + nz * 14.5;
+      if (!(x > -233 && x < -224 && z > -22 && z < 74)) pts.push([x, z]); }   // none on the stall column in the west wedge
   });
   for (let x = -250; x < 210; x += 30) { pts.push([x, -61.6]); pts.push([x, -25.4]); }
-  for (let x = -195; x < 280; x += 30) if (Math.abs(x) > 12) { pts.push([x, 104.3]); pts.push([x, 165.5]); }
+  for (let x = -195; x < 280; x += 30) if (Math.abs(x) > 12) { pts.push([x, 104.3]); if (x > -184) pts.push([x, 165.5]); }
   const poleMat = M('#4f5458', { metalness: .5, roughness: .45 });
   const poles = new THREE.InstancedMesh(new THREE.CylinderGeometry(.09, .14, 8, 8), poleMat, pts.length);
   const arms = new THREE.InstancedMesh(new THREE.BoxGeometry(1.6, .1, .1).translate(.75, -.05, 0), poleMat, pts.length);
@@ -1496,7 +1514,7 @@ function roadLabel(text, x, y, z) {
 roadLabel('S8 · droga ekspresowa', -200, 4, 239);
 roadLabel('← Warszawa', -650, 4, 232);
 roadLabel('Rzeszów →', 650, 4, 246);
-roadLabel('Wjazd i wyjazd', -198, 4, 214);
+roadLabel('Wjazd i wyjazd', -203, 4, 214);
 roadLabel('Wjazd i wyjazd', 25, 4, 214);
 roadLabel('Droga dojazdowa', 352, 4, -250);
 
@@ -1722,7 +1740,7 @@ const parkCars = [];
 { const outer = insetSite(2.6), inner = insetSite(7.4).reverse();
   const lanes = [makePath([...outer, outer[0]], true), makePath([...inner, inner[0]], true)];
   lanes.forEach(p => { for (let i = 0; i < 14; i++) parkCars.push({ p, s: p.total * i / 14 + rr(0, 20), v: rr(7, 10) }); });
-  const arrive = makePath([[400, 229.3], [-185, 229.3], [-201.5, 222], [-201.5, 197.4], [22, 197.4], [22, 106], [-150, 106]]);
+  const arrive = makePath([[400, 229.3], [-190, 229.3], [-206.5, 222], [-206.5, 197.4], [22, 197.4], [22, 106], [-150, 106]]);
   const leave = makePath([[150, 110], [28, 110], [28, 222], [41, 243.2], [450, 243.2]]);
   [arrive, leave].forEach(p => { for (let i = 0; i < 4; i++) parkCars.push({ p, s: -i * 22, v: rr(8, 11) }); });
 }
